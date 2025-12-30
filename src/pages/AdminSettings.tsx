@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  Plane,
   LogOut,
   Settings,
   MessageSquare,
@@ -22,6 +21,7 @@ import {
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../hooks/useAuth'
 import LanguageSelector from '../components/LanguageSelector'
+import Logo from '../components/Logo'
 
 interface VonageConfig {
   apiKey: string
@@ -52,7 +52,7 @@ export default function AdminSettings() {
   const [vonageConfig, setVonageConfig] = useState<VonageConfig>({
     apiKey: '',
     apiSecret: '',
-    fromNumber: 'DroneGarden'
+    fromNumber: 'Drone Service'
   })
 
   const [smtpConfig, setSmtpConfig] = useState<SmtpConfig>({
@@ -87,7 +87,7 @@ export default function AdminSettings() {
           setVonageConfig(prev => ({
             ...prev,
             apiKey: data.vonage.apiKey || '',
-            fromNumber: data.vonage.fromNumber || 'DroneGarden'
+            fromNumber: data.vonage.fromNumber || 'Drone Service'
           }))
         }
         if (data.smtp) {
@@ -237,10 +237,7 @@ export default function AdminSettings() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                <Plane className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl font-bold gradient-text">DroneGarden</span>
+              <Logo size="md" />
               <span className="ml-2 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full border border-amber-500/30 flex items-center gap-1">
                 <Shield className="w-3 h-3" />
                 Admin
@@ -378,7 +375,7 @@ export default function AdminSettings() {
                 type="text"
                 value={vonageConfig.fromNumber}
                 onChange={(e) => setVonageConfig(prev => ({ ...prev, fromNumber: e.target.value }))}
-                placeholder="DroneGarden"
+                placeholder="Drone Service"
                 className="input-glass w-full"
               />
             </div>

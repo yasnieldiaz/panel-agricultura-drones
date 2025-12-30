@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Plane,
   Mail,
   Lock,
   User,
@@ -17,6 +16,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../hooks/useAuth'
 import { isAdminEmail } from '../config/admin'
 import LanguageSelector from '../components/LanguageSelector'
+import Logo from '../components/Logo'
 
 type AuthMode = 'login' | 'signup'
 
@@ -131,11 +131,8 @@ export default function Auth() {
 
           <div className="relative">
             {/* Logo */}
-            <div className="flex items-center justify-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center glow-green">
-                <Plane className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-2xl font-bold gradient-text">DroneGarden</span>
+            <div className="flex items-center justify-center mb-8">
+              <Logo size="lg" />
             </div>
 
             {/* Mode Tabs */}

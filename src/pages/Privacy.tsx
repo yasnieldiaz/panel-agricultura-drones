@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plane, ArrowLeft, Shield, Lock, Eye, UserCheck, Database, Mail, Clock, FileText } from 'lucide-react'
+import { ArrowLeft, Shield, Lock, Eye, UserCheck, Database, Mail, Clock, FileText } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import LanguageSelector from '../components/LanguageSelector'
+import Logo from '../components/Logo'
 
 export default function Privacy() {
   const { t } = useLanguage()
@@ -69,11 +70,8 @@ export default function Privacy() {
       <nav className="sticky top-0 z-50 nav-glass">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                <Plane className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl font-bold gradient-text">DroneGarden</span>
+            <Link to="/">
+              <Logo size="md" />
             </Link>
 
             <div className="flex items-center gap-4">
@@ -193,14 +191,11 @@ export default function Privacy() {
       <footer className="relative py-8 border-t border-white/10 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                <Plane className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-bold gradient-text">DroneGarden</span>
+            <Link to="/">
+              <Logo size="sm" />
             </Link>
             <p className="text-white/40 text-sm">
-              © 2024 DroneGarden. {t('footer.rights')}
+              © 2024 Drone Service. {t('footer.rights')}
             </p>
           </div>
         </div>

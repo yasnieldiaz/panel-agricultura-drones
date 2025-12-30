@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Plane,
   LogOut,
   Calendar as CalendarIcon,
   List,
@@ -26,6 +25,7 @@ import { useAuth } from '../hooks/useAuth'
 import LanguageSelector from '../components/LanguageSelector'
 import ServiceRequestModal from '../components/ServiceRequestModal'
 import { sendConfirmationNotifications, sendCompletionNotifications } from '../services/smsService'
+import Logo from '../components/Logo'
 
 // Types
 interface ServiceRequest {
@@ -287,10 +287,8 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              </div>
-              <span className="hidden sm:inline text-xl font-bold gradient-text">DroneGarden</span>
+              <Logo size="sm" showText={false} />
+              <span className="hidden sm:inline text-xl font-bold gradient-text">Drone Service</span>
               <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full border border-amber-500/30 flex items-center gap-1">
                 <Shield className="w-3 h-3" />
                 Admin
