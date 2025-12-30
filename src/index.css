@@ -11,13 +11,22 @@
   }
 
   body {
-    @apply bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 text-white antialiased;
+    @apply text-white antialiased;
     min-height: 100vh;
+    background: linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #0f172a 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
   }
 
   html {
     scroll-behavior: smooth;
   }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 @layer components {
@@ -61,11 +70,19 @@
 
   /* Floating Elements */
   .floating {
-    animation: float 6s ease-in-out infinite;
+    animation: float 8s ease-in-out infinite;
   }
 
   .floating-delayed {
-    animation: float 6s ease-in-out infinite 2s;
+    animation: float 8s ease-in-out infinite 2s;
+  }
+
+  .floating-slow {
+    animation: floatSlow 12s ease-in-out infinite;
+  }
+
+  .pulse-glow {
+    animation: pulseGlow 4s ease-in-out infinite;
   }
 
   /* Glow Effects */
@@ -127,4 +144,37 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Keyframes */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(2deg);
+  }
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0) translateX(0) scale(1);
+  }
+  33% {
+    transform: translateY(-15px) translateX(10px) scale(1.05);
+  }
+  66% {
+    transform: translateY(10px) translateX(-10px) scale(0.95);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
 }

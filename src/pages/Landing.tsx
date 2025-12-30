@@ -19,6 +19,7 @@ import { useAuth } from '../hooks/useAuth'
 import LanguageSelector from '../components/LanguageSelector'
 import ServiceRequestModal from '../components/ServiceRequestModal'
 import Logo from '../components/Logo'
+import ParticlesBackground from '../components/ParticlesBackground'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -84,12 +85,14 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen overflow-hidden">
-      {/* Background Orbs */}
+      {/* Animated Particles Background */}
+      <ParticlesBackground />
+
+      {/* Glowing Orbs for extra depth */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="orb-green w-96 h-96 -top-48 -left-48 floating" />
-        <div className="orb-teal w-80 h-80 top-1/4 right-0 floating-delayed" />
-        <div className="orb-cyan w-64 h-64 bottom-0 left-1/4 floating" />
-        <div className="orb-green w-72 h-72 bottom-1/4 right-1/4 floating-delayed" />
+        <div className="orb-green w-96 h-96 -top-48 -left-48 floating-slow pulse-glow" />
+        <div className="orb-teal w-80 h-80 top-1/3 -right-20 floating-delayed pulse-glow" />
+        <div className="orb-cyan w-64 h-64 bottom-20 left-1/4 floating-slow" />
       </div>
 
       {/* Navigation */}
