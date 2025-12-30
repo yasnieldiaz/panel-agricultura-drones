@@ -16,7 +16,9 @@ import {
   Loader2,
   ArrowLeft,
   Shield,
-  RefreshCw
+  RefreshCw,
+  Phone,
+  Send
 } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../hooks/useAuth'
@@ -69,9 +71,10 @@ export default function AdminSettings() {
   })
 
   const [saving, setSaving] = useState(false)
-  const [testing, setTesting] = useState<'vonage' | 'smtp' | null>(null)
+  const [testing, setTesting] = useState<'vonage' | 'smtp' | 'sms' | null>(null)
   const [status, setStatus] = useState<ConfigStatus>({ vonage: false, smtp: false })
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [testPhone, setTestPhone] = useState('')
 
   // Load current configuration
   useEffect(() => {
@@ -212,6 +215,41 @@ export default function AdminSettings() {
     } finally {
       setTesting(null)
       setTimeout(() => setMessage(null), 3000)
+    }
+  }
+
+  const sendTestSms = async () => {
+    if (!testPhone.trim()) {
+      setMessage({ type: 'error', text: t('settings.enterTestPhone') })
+      setTimeout(() => setMessage(null), 3000)
+      return
+    }
+
+    setTesting('sms')
+    setMessage(null)
+
+    try {
+      const response = await fetch(`${API_URL}/sms/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: testPhone,
+          message: `🚁 Drone Service - Test SMS\n\nThis is a test message from your Drone Service panel. If you received this, your SMS configuration is working correctly!`
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setMessage({ type: 'success', text: t('settings.smsTestSuccess') })
+      } else {
+        setMessage({ type: 'error', text: data.error || t('settings.smsTestError') })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: t('settings.smsTestError') })
+    } finally {
+      setTesting(null)
+      setTimeout(() => setMessage(null), 5000)
     }
   }
 
@@ -398,6 +436,42 @@ export default function AdminSettings() {
                 {t('settings.test')}
               </button>
             </div>
+
+            {/* Test SMS Section */}
+            {status.vonage && (
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <h3 className="text-white font-medium mb-4 flex items-center gap-2">
+                  <Send className="w-4 h-4 text-emerald-400" />
+                  {t('settings.testSms')}
+                </h3>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="block text-white/60 text-sm mb-1 flex items-center gap-2">
+                      <Phone className="w-4 h-4" />
+                      {t('settings.testPhone')}
+                    </label>
+                    <input
+                      type="tel"
+                      value={testPhone}
+                      onChange={(e) => setTestPhone(e.target.value)}
+                      placeholder="+48 123 456 789"
+                      className="input-glass w-full"
+                    />
+                    <p className="text-white/40 text-xs mt-1">{t('settings.testPhoneHint')}</p>
+                  </div>
+                  <div className="flex items-end pb-6">
+                    <button
+                      onClick={sendTestSms}
+                      disabled={testing === 'sms' || !testPhone.trim()}
+                      className="btn-primary flex items-center gap-2 whitespace-nowrap"
+                    >
+                      {testing === 'sms' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      {t('settings.sendTestSms')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
 

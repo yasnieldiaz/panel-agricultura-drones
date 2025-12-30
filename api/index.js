@@ -449,6 +449,44 @@ app.put('/api/admin/service-requests/:id/status', authenticateToken, async (req,
   }
 });
 
+// ==================== SMS SEND ====================
+
+// Send SMS (admin only or for testing)
+app.post('/api/sms/send', async (req, res) => {
+  if (!vonage) {
+    return res.status(400).json({ error: 'Vonage not configured', success: false });
+  }
+
+  const { to, message } = req.body;
+
+  if (!to || !message) {
+    return res.status(400).json({ error: 'Phone number and message are required', success: false });
+  }
+
+  try {
+    // Clean the phone number (remove spaces, keep + and digits)
+    const cleanPhone = to.replace(/[^\d+]/g, '');
+
+    const response = await vonage.sms.send({
+      to: cleanPhone,
+      from: getFromNumber(),
+      text: message
+    });
+
+    console.log('SMS sent:', response);
+
+    if (response.messages && response.messages[0].status === '0') {
+      res.json({ success: true, messageId: response.messages[0]['message-id'] });
+    } else {
+      const errorText = response.messages?.[0]?.['error-text'] || 'Unknown error';
+      res.status(400).json({ success: false, error: errorText });
+    }
+  } catch (error) {
+    console.error('SMS send error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to send SMS' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`API Server running on port ${PORT}`);

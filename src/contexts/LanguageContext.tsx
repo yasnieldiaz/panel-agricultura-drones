@@ -277,6 +277,13 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.vonageTestError': 'Error al conectar con Vonage',
     'settings.smtpTestSuccess': 'Conexión SMTP exitosa',
     'settings.smtpTestError': 'Error al conectar con SMTP',
+    'settings.testSms': 'Enviar SMS de prueba',
+    'settings.testPhone': 'Número de teléfono',
+    'settings.testPhoneHint': 'Incluye el código de país (+48...)',
+    'settings.sendTestSms': 'Enviar SMS',
+    'settings.enterTestPhone': 'Ingresa un número de teléfono',
+    'settings.smsTestSuccess': 'SMS enviado correctamente',
+    'settings.smsTestError': 'Error al enviar SMS',
   },
   pl: {
     // Navigation
@@ -543,6 +550,13 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.vonageTestError': 'Błąd połączenia z Vonage',
     'settings.smtpTestSuccess': 'Połączenie SMTP udane',
     'settings.smtpTestError': 'Błąd połączenia SMTP',
+    'settings.testSms': 'Wyślij testowy SMS',
+    'settings.testPhone': 'Numer telefonu',
+    'settings.testPhoneHint': 'Włącz kod kraju (+48...)',
+    'settings.sendTestSms': 'Wyślij SMS',
+    'settings.enterTestPhone': 'Wprowadź numer telefonu',
+    'settings.smsTestSuccess': 'SMS wysłany pomyślnie',
+    'settings.smsTestError': 'Błąd wysyłania SMS',
   },
   en: {
     // Navigation
@@ -809,6 +823,13 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.vonageTestError': 'Error connecting to Vonage',
     'settings.smtpTestSuccess': 'SMTP connection successful',
     'settings.smtpTestError': 'Error connecting to SMTP',
+    'settings.testSms': 'Send Test SMS',
+    'settings.testPhone': 'Phone Number',
+    'settings.testPhoneHint': 'Include country code (+48...)',
+    'settings.sendTestSms': 'Send SMS',
+    'settings.enterTestPhone': 'Enter a phone number',
+    'settings.smsTestSuccess': 'SMS sent successfully',
+    'settings.smsTestError': 'Error sending SMS',
   },
   cs: {
     // Navigation
@@ -1075,6 +1096,13 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.vonageTestError': 'Chyba připojení k Vonage',
     'settings.smtpTestSuccess': 'Připojení SMTP úspěšné',
     'settings.smtpTestError': 'Chyba připojení SMTP',
+    'settings.testSms': 'Odeslat testovací SMS',
+    'settings.testPhone': 'Telefonní číslo',
+    'settings.testPhoneHint': 'Včetně kódu země (+48...)',
+    'settings.sendTestSms': 'Odeslat SMS',
+    'settings.enterTestPhone': 'Zadejte telefonní číslo',
+    'settings.smsTestSuccess': 'SMS úspěšně odeslána',
+    'settings.smsTestError': 'Chyba při odesílání SMS',
   },
   sk: {
     // Navigation
@@ -1341,6 +1369,13 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.vonageTestError': 'Chyba pripojenia k Vonage',
     'settings.smtpTestSuccess': 'Pripojenie SMTP úspešné',
     'settings.smtpTestError': 'Chyba pripojenia SMTP',
+    'settings.testSms': 'Odoslať testovací SMS',
+    'settings.testPhone': 'Telefónne číslo',
+    'settings.testPhoneHint': 'Vrátane kódu krajiny (+48...)',
+    'settings.sendTestSms': 'Odoslať SMS',
+    'settings.enterTestPhone': 'Zadajte telefónne číslo',
+    'settings.smsTestSuccess': 'SMS úspešne odoslaná',
+    'settings.smsTestError': 'Chyba pri odosielaní SMS',
   },
 }
 
