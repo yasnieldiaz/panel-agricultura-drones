@@ -95,6 +95,7 @@ export interface ServiceRequest {
   id?: number;
   service: string;
   scheduledDate: string;
+  scheduledEndDate?: string;
   scheduledTime: string;
   name: string;
   email: string;

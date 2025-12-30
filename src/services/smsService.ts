@@ -11,7 +11,7 @@ interface ConfirmServiceParams {
   time: string
   location: string
   area?: number
-  language?: 'es' | 'en' | 'pl'
+  language?: 'es' | 'en' | 'pl' | 'cs' | 'sk'
 }
 
 interface CompleteServiceParams {
@@ -19,7 +19,7 @@ interface CompleteServiceParams {
   email: string
   clientName: string
   service: string
-  language?: 'es' | 'en' | 'pl'
+  language?: 'es' | 'en' | 'pl' | 'cs' | 'sk'
 }
 
 interface NotificationResponse {

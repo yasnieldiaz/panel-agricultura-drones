@@ -11,7 +11,8 @@ import {
   Mail,
   Menu,
   X,
-  CalendarPlus
+  CalendarPlus,
+  Truck
 } from 'lucide-react'
 import { useState } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -73,6 +74,12 @@ export default function Landing() {
       titleKey: 'service.elevation.title',
       descKey: 'service.elevation.desc',
       color: 'from-blue-500 to-indigo-500',
+    },
+    {
+      icon: Truck,
+      titleKey: 'service.rental.title',
+      descKey: 'service.rental.desc',
+      color: 'from-indigo-500 to-purple-500',
     },
   ]
 
@@ -258,11 +265,11 @@ export default function Landing() {
             </motion.h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="flex flex-wrap justify-center gap-6">
             {services.map((service, index) => (
               <div
                 key={index}
-                className="group card-glass cursor-pointer"
+                className="group card-glass cursor-pointer w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(20%-20px)]"
               >
                 <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${service.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                   <service.icon className="w-7 h-7 text-white" />
