@@ -89,7 +89,9 @@ export default function AdminSettings() {
         if (data.vonage) {
           setVonageConfig(prev => ({
             ...prev,
-            apiKey: data.vonage.apiKey || '',
+            // Don't set masked apiKey - leave empty so user knows to enter new one or leave blank
+            apiKey: '',
+            apiSecret: '',
             fromNumber: data.vonage.fromNumber || 'Drone Service'
           }))
         }
@@ -99,6 +101,7 @@ export default function AdminSettings() {
             host: data.smtp.host || 'smtp.gmail.com',
             port: data.smtp.port || '587',
             user: data.smtp.user || '',
+            pass: '', // Don't show password
             fromEmail: data.smtp.fromEmail || ''
           }))
         }
@@ -379,6 +382,9 @@ export default function AdminSettings() {
                 placeholder="xxxxxxxx"
                 className="input-glass w-full"
               />
+              {status.vonage && (
+                <p className="text-white/40 text-xs mt-1">{t('settings.keepExisting')}</p>
+              )}
             </div>
 
             <div>
@@ -402,6 +408,9 @@ export default function AdminSettings() {
                   {showSecrets.vonageSecret ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {status.vonage && (
+                <p className="text-white/40 text-xs mt-1">{t('settings.keepExisting')}</p>
+              )}
             </div>
 
             <div>
@@ -563,7 +572,10 @@ export default function AdminSettings() {
                   {showSecrets.smtpPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              <p className="text-white/40 text-xs mt-1">{t('settings.smtpPassHint')}</p>
+              <p className="text-white/40 text-xs mt-1">
+                {t('settings.smtpPassHint')}
+                {status.smtp && ` - ${t('settings.keepExisting')}`}
+              </p>
             </div>
 
             <div>

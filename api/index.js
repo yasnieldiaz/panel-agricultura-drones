@@ -278,15 +278,30 @@ app.get('/api/config', (req, res) => {
 app.post('/api/config/vonage', (req, res) => {
   const { apiKey, apiSecret, fromNumber } = req.body;
 
-  if (!apiKey || !apiSecret) {
-    return res.status(400).json({ error: 'API Key and API Secret are required' });
+  // Initialize vonage config if it doesn't exist
+  if (!config.vonage) {
+    config.vonage = {};
   }
 
-  config.vonage = {
-    apiKey,
-    apiSecret,
-    fromNumber: fromNumber || 'Drone Service'
-  };
+  // Only update apiKey if provided and not a masked value
+  if (apiKey && !apiKey.includes('****')) {
+    config.vonage.apiKey = apiKey;
+  }
+
+  // Only update apiSecret if provided (not empty)
+  if (apiSecret && apiSecret.trim() !== '') {
+    config.vonage.apiSecret = apiSecret;
+  }
+
+  // Always update fromNumber if provided
+  if (fromNumber) {
+    config.vonage.fromNumber = fromNumber;
+  }
+
+  // Check if we have valid credentials
+  if (!config.vonage.apiKey || !config.vonage.apiSecret) {
+    return res.status(400).json({ error: 'API Key and API Secret are required' });
+  }
 
   saveConfig(config);
   vonage = createVonageClient();
@@ -299,17 +314,38 @@ app.post('/api/config/vonage', (req, res) => {
 app.post('/api/config/smtp', (req, res) => {
   const { host, port, user, pass, fromEmail } = req.body;
 
-  if (!user || !pass) {
-    return res.status(400).json({ error: 'SMTP user and password are required' });
+  // Initialize smtp config if it doesn't exist
+  if (!config.smtp) {
+    config.smtp = {};
   }
 
-  config.smtp = {
-    host: host || 'smtp.gmail.com',
-    port: port || '587',
-    user,
-    pass,
-    fromEmail: fromEmail || user
-  };
+  // Update host and port if provided
+  if (host) {
+    config.smtp.host = host;
+  }
+  if (port) {
+    config.smtp.port = port;
+  }
+
+  // Only update user if provided
+  if (user && user.trim() !== '') {
+    config.smtp.user = user;
+  }
+
+  // Only update password if provided (not empty)
+  if (pass && pass.trim() !== '') {
+    config.smtp.pass = pass;
+  }
+
+  // Update fromEmail if provided
+  if (fromEmail) {
+    config.smtp.fromEmail = fromEmail;
+  }
+
+  // Check if we have valid credentials
+  if (!config.smtp.user || !config.smtp.pass) {
+    return res.status(400).json({ error: 'SMTP user and password are required' });
+  }
 
   saveConfig(config);
   emailTransporter = createEmailTransporter();

@@ -284,6 +284,7 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.enterTestPhone': 'Ingresa un número de teléfono',
     'settings.smsTestSuccess': 'SMS enviado correctamente',
     'settings.smsTestError': 'Error al enviar SMS',
+    'settings.keepExisting': 'Dejar vacío para mantener valor actual',
   },
   pl: {
     // Navigation
@@ -557,6 +558,7 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.enterTestPhone': 'Wprowadź numer telefonu',
     'settings.smsTestSuccess': 'SMS wysłany pomyślnie',
     'settings.smsTestError': 'Błąd wysyłania SMS',
+    'settings.keepExisting': 'Pozostaw puste, aby zachować aktualną wartość',
   },
   en: {
     // Navigation
@@ -830,6 +832,7 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.enterTestPhone': 'Enter a phone number',
     'settings.smsTestSuccess': 'SMS sent successfully',
     'settings.smsTestError': 'Error sending SMS',
+    'settings.keepExisting': 'Leave empty to keep current value',
   },
   cs: {
     // Navigation
@@ -1103,6 +1106,7 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.enterTestPhone': 'Zadejte telefonní číslo',
     'settings.smsTestSuccess': 'SMS úspěšně odeslána',
     'settings.smsTestError': 'Chyba při odesílání SMS',
+    'settings.keepExisting': 'Nechte prázdné pro zachování aktuální hodnoty',
   },
   sk: {
     // Navigation
@@ -1376,6 +1380,7 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.enterTestPhone': 'Zadajte telefónne číslo',
     'settings.smsTestSuccess': 'SMS úspešne odoslaná',
     'settings.smsTestError': 'Chyba pri odosielaní SMS',
+    'settings.keepExisting': 'Nechajte prázdne pre zachovanie aktuálnej hodnoty',
   },
 }
 
