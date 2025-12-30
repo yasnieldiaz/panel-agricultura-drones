@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  body {
+    @apply bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 text-white antialiased;
+    min-height: 100vh;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Glass Card Effect */
+  .glass {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl;
+  }
+
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-xl border border-white/10 shadow-xl;
+  }
+
+  .glass-hover {
+    @apply transition-all duration-300 hover:bg-white/20 hover:border-white/30 hover:shadow-2xl hover:scale-[1.02];
+  }
+
+  /* Glassmorphism Button */
+  .btn-glass {
+    @apply px-6 py-3 rounded-xl glass glass-hover font-medium text-white cursor-pointer;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500
+           font-semibold text-white shadow-lg shadow-emerald-500/30
+           hover:shadow-emerald-500/50 hover:scale-105
+           transition-all duration-300 cursor-pointer;
+  }
+
+  /* Glassmorphism Input */
+  .input-glass {
+    @apply w-full px-4 py-3 rounded-xl bg-white/5 backdrop-blur-sm
+           border border-white/10 text-white placeholder-white/50
+           focus:outline-none focus:border-emerald-500/50 focus:bg-white/10
+           transition-all duration-300;
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent;
+  }
+
+  /* Floating Elements */
+  .floating {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .floating-delayed {
+    animation: float 6s ease-in-out infinite 2s;
+  }
+
+  /* Glow Effects */
+  .glow-green {
+    box-shadow: 0 0 40px rgba(34, 197, 94, 0.3);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 40px rgba(34, 197, 94, 0.5);
+  }
+
+  /* Navigation Glass */
+  .nav-glass {
+    @apply bg-black/30 backdrop-blur-2xl border-b border-white/10;
+  }
+
+  /* Card Styles */
+  .card-glass {
+    @apply glass rounded-2xl p-6 glass-hover;
+  }
+
+  /* Orb Background Effects */
+  .orb {
+    @apply absolute rounded-full blur-3xl opacity-30;
+  }
+
+  .orb-green {
+    @apply orb bg-emerald-500;
+  }
+
+  .orb-teal {
+    @apply orb bg-teal-500;
+  }
+
+  .orb-cyan {
+    @apply orb bg-cyan-500;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
