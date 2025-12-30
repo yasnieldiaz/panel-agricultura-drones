@@ -71,10 +71,11 @@ export default function AdminSettings() {
   })
 
   const [saving, setSaving] = useState(false)
-  const [testing, setTesting] = useState<'vonage' | 'smtp' | 'sms' | null>(null)
+  const [testing, setTesting] = useState<'vonage' | 'smtp' | 'sms' | 'email' | null>(null)
   const [status, setStatus] = useState<ConfigStatus>({ vonage: false, smtp: false })
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [testPhone, setTestPhone] = useState('')
+  const [testEmail, setTestEmail] = useState('')
 
   // Load current configuration
   useEffect(() => {
@@ -250,6 +251,42 @@ export default function AdminSettings() {
       }
     } catch (error) {
       setMessage({ type: 'error', text: t('settings.smsTestError') })
+    } finally {
+      setTesting(null)
+      setTimeout(() => setMessage(null), 5000)
+    }
+  }
+
+  const sendTestEmail = async () => {
+    if (!testEmail.trim()) {
+      setMessage({ type: 'error', text: t('settings.enterTestEmail') })
+      setTimeout(() => setMessage(null), 3000)
+      return
+    }
+
+    setTesting('email')
+    setMessage(null)
+
+    try {
+      const response = await fetch(`${API_URL}/email/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: testEmail,
+          subject: '🚁 Drone Service - Test Email',
+          message: 'This is a test email from your Drone Service panel.\n\nIf you received this, your SMTP configuration is working correctly!\n\n---\nDrone Service Team'
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setMessage({ type: 'success', text: t('settings.emailTestSuccess') })
+      } else {
+        setMessage({ type: 'error', text: data.error || t('settings.emailTestError') })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: t('settings.emailTestError') })
     } finally {
       setTesting(null)
       setTimeout(() => setMessage(null), 5000)
@@ -609,6 +646,39 @@ export default function AdminSettings() {
                 {testing === 'smtp' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                 {t('settings.test')}
               </button>
+            </div>
+
+            {/* Test Email Section */}
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <h3 className="text-white font-medium mb-4 flex items-center gap-2">
+                <Send className="w-4 h-4 text-purple-400" />
+                {t('settings.testEmail')}
+              </h3>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-white/60 text-sm mb-1 flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    {t('settings.testEmailAddress')}
+                  </label>
+                  <input
+                    type="email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    placeholder="test@example.com"
+                    className="input-glass w-full"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={sendTestEmail}
+                    disabled={testing === 'email' || !testEmail.trim() || !status.smtp}
+                    className="btn-primary flex items-center gap-2 whitespace-nowrap"
+                  >
+                    {testing === 'email' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {t('settings.sendTestEmail')}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>

@@ -285,6 +285,12 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.smsTestSuccess': 'SMS enviado correctamente',
     'settings.smsTestError': 'Error al enviar SMS',
     'settings.keepExisting': 'Dejar vacío para mantener valor actual',
+    'settings.testEmail': 'Enviar Email de prueba',
+    'settings.testEmailAddress': 'Dirección de email',
+    'settings.sendTestEmail': 'Enviar Email',
+    'settings.enterTestEmail': 'Ingresa una dirección de email',
+    'settings.emailTestSuccess': 'Email enviado correctamente',
+    'settings.emailTestError': 'Error al enviar email',
   },
   pl: {
     // Navigation
@@ -559,6 +565,12 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.smsTestSuccess': 'SMS wysłany pomyślnie',
     'settings.smsTestError': 'Błąd wysyłania SMS',
     'settings.keepExisting': 'Pozostaw puste, aby zachować aktualną wartość',
+    'settings.testEmail': 'Wyślij testowy Email',
+    'settings.testEmailAddress': 'Adres email',
+    'settings.sendTestEmail': 'Wyślij Email',
+    'settings.enterTestEmail': 'Wprowadź adres email',
+    'settings.emailTestSuccess': 'Email wysłany pomyślnie',
+    'settings.emailTestError': 'Błąd wysyłania email',
   },
   en: {
     // Navigation
@@ -833,6 +845,12 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.smsTestSuccess': 'SMS sent successfully',
     'settings.smsTestError': 'Error sending SMS',
     'settings.keepExisting': 'Leave empty to keep current value',
+    'settings.testEmail': 'Send Test Email',
+    'settings.testEmailAddress': 'Email address',
+    'settings.sendTestEmail': 'Send Email',
+    'settings.enterTestEmail': 'Enter an email address',
+    'settings.emailTestSuccess': 'Email sent successfully',
+    'settings.emailTestError': 'Error sending email',
   },
   cs: {
     // Navigation
@@ -1107,6 +1125,12 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.smsTestSuccess': 'SMS úspěšně odeslána',
     'settings.smsTestError': 'Chyba při odesílání SMS',
     'settings.keepExisting': 'Nechte prázdné pro zachování aktuální hodnoty',
+    'settings.testEmail': 'Odeslat testovací Email',
+    'settings.testEmailAddress': 'Emailová adresa',
+    'settings.sendTestEmail': 'Odeslat Email',
+    'settings.enterTestEmail': 'Zadejte emailovou adresu',
+    'settings.emailTestSuccess': 'Email úspěšně odeslán',
+    'settings.emailTestError': 'Chyba při odesílání emailu',
   },
   sk: {
     // Navigation
@@ -1381,6 +1405,12 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.smsTestSuccess': 'SMS úspešne odoslaná',
     'settings.smsTestError': 'Chyba pri odosielaní SMS',
     'settings.keepExisting': 'Nechajte prázdne pre zachovanie aktuálnej hodnoty',
+    'settings.testEmail': 'Odoslať testovací Email',
+    'settings.testEmailAddress': 'Emailová adresa',
+    'settings.sendTestEmail': 'Odoslať Email',
+    'settings.enterTestEmail': 'Zadajte emailovú adresu',
+    'settings.emailTestSuccess': 'Email úspešne odoslaný',
+    'settings.emailTestError': 'Chyba pri odosielaní emailu',
   },
 }
 

@@ -523,6 +523,37 @@ app.post('/api/sms/send', async (req, res) => {
   }
 });
 
+// ==================== EMAIL SEND ====================
+
+// Send Email (for testing)
+app.post('/api/email/send', async (req, res) => {
+  if (!emailTransporter) {
+    return res.status(400).json({ error: 'SMTP not configured', success: false });
+  }
+
+  const { to, subject, message } = req.body;
+
+  if (!to || !subject || !message) {
+    return res.status(400).json({ error: 'Email address, subject and message are required', success: false });
+  }
+
+  try {
+    const info = await emailTransporter.sendMail({
+      from: `"Drone Service" <${getFromEmail()}>`,
+      to: to,
+      subject: subject,
+      text: message,
+      html: message.replace(/\n/g, '<br>')
+    });
+
+    console.log('Email sent:', info.messageId);
+    res.json({ success: true, messageId: info.messageId });
+  } catch (error) {
+    console.error('Email send error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to send email' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`API Server running on port ${PORT}`);
