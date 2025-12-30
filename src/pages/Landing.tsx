@@ -99,6 +99,7 @@ export default function Landing() {
               <a href="#servicios" className="text-white/70 hover:text-white transition-colors">{t('nav.services')}</a>
               <a href="#nosotros" className="text-white/70 hover:text-white transition-colors">{t('nav.about')}</a>
               <a href="#contacto" className="text-white/70 hover:text-white transition-colors">{t('nav.contact')}</a>
+              <Link to="/privacy" className="text-white/70 hover:text-white transition-colors">{t('nav.privacy')}</Link>
               <LanguageSelector />
               <Link to="/auth" className="btn-primary flex items-center gap-2">
                 {t('nav.start')} <ArrowRight className="w-4 h-4" />
@@ -129,6 +130,7 @@ export default function Landing() {
               <a href="#servicios" className="block text-white/70 hover:text-white">{t('nav.services')}</a>
               <a href="#nosotros" className="block text-white/70 hover:text-white">{t('nav.about')}</a>
               <a href="#contacto" className="block text-white/70 hover:text-white">{t('nav.contact')}</a>
+              <Link to="/privacy" className="block text-white/70 hover:text-white">{t('nav.privacy')}</Link>
               <Link to="/auth" className="btn-primary inline-flex items-center gap-2">
                 {t('nav.start')} <ArrowRight className="w-4 h-4" />
               </Link>
@@ -429,7 +431,29 @@ export default function Landing() {
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
+              className="space-y-6"
             >
+              {/* OpenStreetMap */}
+              <div className="glass rounded-2xl p-2 overflow-hidden">
+                <iframe
+                  title="DroneGarden Location"
+                  width="100%"
+                  height="250"
+                  style={{ border: 0, borderRadius: '12px' }}
+                  loading="lazy"
+                  src="https://www.openstreetmap.org/export/embed.html?bbox=18.5350%2C50.0940%2C18.5480%2C50.1010&layer=mapnik&marker=50.0975%2C18.5415"
+                />
+                <a
+                  href="https://www.openstreetmap.org/?mlat=50.0975&mlon=18.5415#map=17/50.0975/18.5415"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-center text-white/40 hover:text-white/60 text-xs mt-2 transition-colors"
+                >
+                  {t('contact.viewLargerMap')}
+                </a>
+              </div>
+
+              {/* Contact Form */}
               <form className="glass rounded-2xl p-6 sm:p-8 space-y-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <input

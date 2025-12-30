@@ -17,6 +17,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.services': 'Servicios',
     'nav.about': 'Nosotros',
     'nav.contact': 'Contacto',
+    'nav.privacy': 'Privacidad',
     'nav.start': 'Comenzar',
 
     // Hero
@@ -80,6 +81,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.form.subject': 'Asunto',
     'contact.form.message': 'Mensaje',
     'contact.form.send': 'Enviar Mensaje',
+    'contact.viewLargerMap': 'Ver mapa mas grande',
 
     // Footer
     'footer.rights': 'Todos los derechos reservados.',
@@ -232,6 +234,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.services': 'Usługi',
     'nav.about': 'O nas',
     'nav.contact': 'Kontakt',
+    'nav.privacy': 'Prywatnosc',
     'nav.start': 'Rozpocznij',
 
     // Hero
@@ -295,6 +298,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.form.subject': 'Temat',
     'contact.form.message': 'Wiadomość',
     'contact.form.send': 'Wyślij Wiadomość',
+    'contact.viewLargerMap': 'Zobacz wieksza mape',
 
     // Footer
     'footer.rights': 'Wszelkie prawa zastrzeżone.',
@@ -447,6 +451,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.services': 'Services',
     'nav.about': 'About',
     'nav.contact': 'Contact',
+    'nav.privacy': 'Privacy',
     'nav.start': 'Get Started',
 
     // Hero
@@ -510,6 +515,7 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.form.subject': 'Subject',
     'contact.form.message': 'Message',
     'contact.form.send': 'Send Message',
+    'contact.viewLargerMap': 'View larger map',
 
     // Footer
     'footer.rights': 'All rights reserved.',
