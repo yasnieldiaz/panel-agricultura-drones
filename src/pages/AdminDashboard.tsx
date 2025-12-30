@@ -287,28 +287,28 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                <Plane className="w-6 h-6 text-white" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <span className="text-xl font-bold gradient-text">DroneGarden</span>
-              <span className="ml-2 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full border border-amber-500/30 flex items-center gap-1">
+              <span className="hidden sm:inline text-xl font-bold gradient-text">DroneGarden</span>
+              <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full border border-amber-500/30 flex items-center gap-1">
                 <Shield className="w-3 h-3" />
                 Admin
               </span>
             </Link>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <LanguageSelector />
               <Link
                 to="/admin/settings"
-                className="btn-glass flex items-center gap-2 text-sm"
+                className="btn-glass flex items-center gap-2 text-sm px-2 sm:px-4"
               >
                 <Settings className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('settings.title')}</span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="btn-glass flex items-center gap-2 text-sm"
+                className="btn-glass flex items-center gap-2 text-sm px-2 sm:px-4"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('dashboard.logout')}</span>
