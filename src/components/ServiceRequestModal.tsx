@@ -30,8 +30,15 @@ const timeSlots = [
   '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
 ]
 
+// Map language to locale for date formatting
+const languageToLocale: Record<string, string> = {
+  es: 'es-ES',
+  pl: 'pl-PL',
+  en: 'en-US'
+}
+
 export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }: ServiceRequestModalProps) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const { user } = useAuth()
   const [step, setStep] = useState(1)
   const [selectedService, setSelectedService] = useState<string>('')
@@ -225,6 +232,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }
                         min={today}
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
+                        lang={languageToLocale[language]}
                         className="input-glass w-full mb-6"
                       />
 
@@ -353,7 +361,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }
                             </div>
                             <div className="flex justify-between">
                               <span className="text-white/60">{t('serviceRequest.summaryDate')}</span>
-                              <span className="text-white">{new Date(selectedDate).toLocaleDateString()}</span>
+                              <span className="text-white">{new Date(selectedDate + 'T00:00:00').toLocaleDateString(languageToLocale[language], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-white/60">{t('serviceRequest.summaryTime')}</span>
