@@ -438,40 +438,38 @@ export default function AdminSettings() {
             </div>
 
             {/* Test SMS Section */}
-            {status.vonage && (
-              <div className="mt-6 pt-6 border-t border-white/10">
-                <h3 className="text-white font-medium mb-4 flex items-center gap-2">
-                  <Send className="w-4 h-4 text-emerald-400" />
-                  {t('settings.testSms')}
-                </h3>
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <label className="block text-white/60 text-sm mb-1 flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
-                      {t('settings.testPhone')}
-                    </label>
-                    <input
-                      type="tel"
-                      value={testPhone}
-                      onChange={(e) => setTestPhone(e.target.value)}
-                      placeholder="+48 123 456 789"
-                      className="input-glass w-full"
-                    />
-                    <p className="text-white/40 text-xs mt-1">{t('settings.testPhoneHint')}</p>
-                  </div>
-                  <div className="flex items-end pb-6">
-                    <button
-                      onClick={sendTestSms}
-                      disabled={testing === 'sms' || !testPhone.trim()}
-                      className="btn-primary flex items-center gap-2 whitespace-nowrap"
-                    >
-                      {testing === 'sms' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      {t('settings.sendTestSms')}
-                    </button>
-                  </div>
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <h3 className="text-white font-medium mb-4 flex items-center gap-2">
+                <Send className="w-4 h-4 text-emerald-400" />
+                {t('settings.testSms')}
+              </h3>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-white/60 text-sm mb-1 flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    {t('settings.testPhone')}
+                  </label>
+                  <input
+                    type="tel"
+                    value={testPhone}
+                    onChange={(e) => setTestPhone(e.target.value)}
+                    placeholder="+48 123 456 789"
+                    className="input-glass w-full"
+                  />
+                  <p className="text-white/40 text-xs mt-1">{t('settings.testPhoneHint')}</p>
+                </div>
+                <div className="flex items-end pb-6">
+                  <button
+                    onClick={sendTestSms}
+                    disabled={testing === 'sms' || !testPhone.trim() || !status.vonage}
+                    className="btn-primary flex items-center gap-2 whitespace-nowrap"
+                  >
+                    {testing === 'sms' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {t('settings.sendTestSms')}
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </motion.div>
 
