@@ -83,6 +83,33 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Footer
     'footer.rights': 'Todos los derechos reservados.',
+    'footer.privacy': 'Politica de Privacidad',
+
+    // Privacy Policy
+    'privacy.title': 'Politica de Privacidad',
+    'privacy.back': 'Volver al inicio',
+    'privacy.lastUpdated': 'Ultima actualizacion',
+    'privacy.intro': 'En DroneGarden, nos comprometemos a proteger su privacidad y sus datos personales. Esta politica de privacidad explica como recopilamos, usamos y protegemos su informacion de acuerdo con el Reglamento General de Proteccion de Datos (RGPD) de la Union Europea.',
+    'privacy.gdprCompliant': 'Cumplimiento RGPD',
+    'privacy.gdprDescription': 'Esta politica cumple con el Reglamento General de Proteccion de Datos (UE) 2016/679',
+    'privacy.section1.title': 'Responsable del Tratamiento',
+    'privacy.section1.content': 'DroneGarden, con domicilio en Ul. Smolna 14, 44-200 Rybnik, Polonia, es el responsable del tratamiento de sus datos personales. Puede contactarnos en admin@drone-partss.com para cualquier consulta relacionada con la privacidad.',
+    'privacy.section2.title': 'Datos que Recopilamos',
+    'privacy.section2.content': 'Recopilamos los siguientes tipos de datos personales:\n\n- Datos de identificacion: nombre, apellidos, email, telefono\n- Datos de ubicacion: direccion de la finca o terreno para el servicio\n- Datos de servicio: tipo de servicio solicitado, fechas, area de trabajo\n- Datos tecnicos: direccion IP, tipo de navegador, cookies',
+    'privacy.section3.title': 'Finalidad del Tratamiento',
+    'privacy.section3.content': 'Utilizamos sus datos personales para:\n\n- Gestionar y procesar sus solicitudes de servicios agricolas\n- Comunicarnos con usted sobre el estado de sus servicios\n- Enviar confirmaciones y notificaciones por SMS y email\n- Mejorar nuestros servicios y experiencia de usuario\n- Cumplir con obligaciones legales',
+    'privacy.section4.title': 'Base Legal del Tratamiento',
+    'privacy.section4.content': 'El tratamiento de sus datos se basa en:\n\n- Su consentimiento explicito al registrarse y solicitar servicios\n- La ejecucion de un contrato de servicios\n- El cumplimiento de obligaciones legales\n- Nuestro interes legitimo en mejorar nuestros servicios',
+    'privacy.section5.title': 'Sus Derechos',
+    'privacy.section5.content': 'Segun el RGPD, usted tiene derecho a:\n\n- Acceso: solicitar una copia de sus datos personales\n- Rectificacion: corregir datos inexactos o incompletos\n- Supresion: solicitar la eliminacion de sus datos\n- Limitacion: restringir el procesamiento de sus datos\n- Portabilidad: recibir sus datos en formato estructurado\n- Oposicion: oponerse al tratamiento de sus datos\n- Retirar consentimiento: en cualquier momento',
+    'privacy.section6.title': 'Conservacion de Datos',
+    'privacy.section6.content': 'Conservamos sus datos personales durante el tiempo necesario para cumplir con los fines para los que fueron recopilados, incluyendo requisitos legales, contables o de informes. Generalmente, los datos de clientes se conservan durante 5 años despues del ultimo servicio prestado.',
+    'privacy.section7.title': 'Seguridad de los Datos',
+    'privacy.section7.content': 'Implementamos medidas tecnicas y organizativas apropiadas para proteger sus datos personales contra el acceso no autorizado, alteracion, divulgacion o destruccion. Esto incluye encriptacion SSL, acceso restringido y copias de seguridad regulares.',
+    'privacy.section8.title': 'Contacto y Reclamaciones',
+    'privacy.section8.content': 'Para ejercer sus derechos o realizar consultas sobre privacidad, contactenos en admin@drone-partss.com. Si considera que el tratamiento de sus datos vulnera la normativa, puede presentar una reclamacion ante la Agencia de Proteccion de Datos correspondiente.',
+    'privacy.contact.title': 'Contacto para Privacidad',
+    'privacy.contact.description': 'Si tiene preguntas sobre esta politica o desea ejercer sus derechos:',
 
     // Auth
     'auth.login': 'Iniciar Sesión',
@@ -271,6 +298,33 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Footer
     'footer.rights': 'Wszelkie prawa zastrzeżone.',
+    'footer.privacy': 'Polityka Prywatnosci',
+
+    // Privacy Policy
+    'privacy.title': 'Polityka Prywatnosci',
+    'privacy.back': 'Powrot do strony glownej',
+    'privacy.lastUpdated': 'Ostatnia aktualizacja',
+    'privacy.intro': 'W DroneGarden zobowiazujemy sie do ochrony Twojej prywatnosci i danych osobowych. Niniejsza polityka prywatnosci wyjasnia, w jaki sposob zbieramy, wykorzystujemy i chronimy Twoje informacje zgodnie z Ogolnym Rozporzadzeniem o Ochronie Danych (RODO) Unii Europejskiej.',
+    'privacy.gdprCompliant': 'Zgodnosc z RODO',
+    'privacy.gdprDescription': 'Niniejsza polityka jest zgodna z Ogolnym Rozporzadzeniem o Ochronie Danych (UE) 2016/679',
+    'privacy.section1.title': 'Administrator Danych',
+    'privacy.section1.content': 'DroneGarden z siedziba przy Ul. Smolna 14, 44-200 Rybnik, Polska, jest administratorem Twoich danych osobowych. Mozesz sie z nami skontaktowac pod adresem admin@drone-partss.com w sprawie wszelkich pytan dotyczacych prywatnosci.',
+    'privacy.section2.title': 'Dane, ktore Zbieramy',
+    'privacy.section2.content': 'Zbieramy nastepujace rodzaje danych osobowych:\n\n- Dane identyfikacyjne: imie, nazwisko, email, telefon\n- Dane lokalizacyjne: adres gospodarstwa lub terenu do obslugi\n- Dane uslugowe: rodzaj zamowionej uslugi, daty, obszar pracy\n- Dane techniczne: adres IP, typ przegladarki, pliki cookie',
+    'privacy.section3.title': 'Cel Przetwarzania',
+    'privacy.section3.content': 'Wykorzystujemy Twoje dane osobowe do:\n\n- Zarzadzania i przetwarzania zamowien na uslugi rolnicze\n- Komunikacji z Toba w sprawie statusu uslug\n- Wysylania potwierdzen i powiadomien SMS i email\n- Poprawy naszych uslug i doswiadczenia uzytkownika\n- Spelniania obowiazkow prawnych',
+    'privacy.section4.title': 'Podstawa Prawna Przetwarzania',
+    'privacy.section4.content': 'Przetwarzanie Twoich danych opiera sie na:\n\n- Twojej wyraznej zgodzie przy rejestracji i zamawianiu uslug\n- Wykonaniu umowy o swiadczenie uslug\n- Spelnieniu obowiazkow prawnych\n- Naszym uzasadnionym interesie w poprawie naszych uslug',
+    'privacy.section5.title': 'Twoje Prawa',
+    'privacy.section5.content': 'Zgodnie z RODO masz prawo do:\n\n- Dostepu: zadania kopii swoich danych osobowych\n- Sprostowania: poprawienia niedokladnych lub niekompletnych danych\n- Usuniecia: zadania usuniecia swoich danych\n- Ograniczenia: ograniczenia przetwarzania swoich danych\n- Przenoszenia: otrzymania swoich danych w ustrukturyzowanym formacie\n- Sprzeciwu: sprzeciwienia sie przetwarzaniu swoich danych\n- Wycofania zgody: w dowolnym momencie',
+    'privacy.section6.title': 'Przechowywanie Danych',
+    'privacy.section6.content': 'Przechowujemy Twoje dane osobowe przez okres niezbedny do realizacji celow, dla ktorych zostaly zebrane, w tym wymagan prawnych, ksiegowych lub sprawozdawczych. Ogolnie dane klientow sa przechowywane przez 5 lat po ostatniej swiadczonej usludze.',
+    'privacy.section7.title': 'Bezpieczenstwo Danych',
+    'privacy.section7.content': 'Wdrazamy odpowiednie srodki techniczne i organizacyjne w celu ochrony Twoich danych osobowych przed nieuprawnionym dostepem, zmiana, ujawnieniem lub zniszczeniem. Obejmuje to szyfrowanie SSL, ograniczony dostep i regularne kopie zapasowe.',
+    'privacy.section8.title': 'Kontakt i Skargi',
+    'privacy.section8.content': 'Aby skorzystac ze swoich praw lub uzyskac informacje o prywatnosci, skontaktuj sie z nami pod adresem admin@drone-partss.com. Jesli uwazasz, ze przetwarzanie Twoich danych narusza przepisy, mozesz zlozyc skarge do odpowiedniego organu ochrony danych.',
+    'privacy.contact.title': 'Kontakt w Sprawie Prywatnosci',
+    'privacy.contact.description': 'Jesli masz pytania dotyczace tej polityki lub chcesz skorzystac ze swoich praw:',
 
     // Auth
     'auth.login': 'Zaloguj się',
@@ -459,6 +513,33 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Footer
     'footer.rights': 'All rights reserved.',
+    'footer.privacy': 'Privacy Policy',
+
+    // Privacy Policy
+    'privacy.title': 'Privacy Policy',
+    'privacy.back': 'Back to home',
+    'privacy.lastUpdated': 'Last updated',
+    'privacy.intro': 'At DroneGarden, we are committed to protecting your privacy and personal data. This privacy policy explains how we collect, use, and protect your information in accordance with the General Data Protection Regulation (GDPR) of the European Union.',
+    'privacy.gdprCompliant': 'GDPR Compliant',
+    'privacy.gdprDescription': 'This policy complies with the General Data Protection Regulation (EU) 2016/679',
+    'privacy.section1.title': 'Data Controller',
+    'privacy.section1.content': 'DroneGarden, located at Ul. Smolna 14, 44-200 Rybnik, Poland, is the data controller for your personal data. You can contact us at admin@drone-partss.com for any privacy-related inquiries.',
+    'privacy.section2.title': 'Data We Collect',
+    'privacy.section2.content': 'We collect the following types of personal data:\n\n- Identification data: name, surname, email, phone\n- Location data: farm or field address for service\n- Service data: type of service requested, dates, work area\n- Technical data: IP address, browser type, cookies',
+    'privacy.section3.title': 'Purpose of Processing',
+    'privacy.section3.content': 'We use your personal data to:\n\n- Manage and process your agricultural service requests\n- Communicate with you about the status of your services\n- Send confirmations and notifications via SMS and email\n- Improve our services and user experience\n- Comply with legal obligations',
+    'privacy.section4.title': 'Legal Basis for Processing',
+    'privacy.section4.content': 'The processing of your data is based on:\n\n- Your explicit consent when registering and requesting services\n- The execution of a service contract\n- Compliance with legal obligations\n- Our legitimate interest in improving our services',
+    'privacy.section5.title': 'Your Rights',
+    'privacy.section5.content': 'Under the GDPR, you have the right to:\n\n- Access: request a copy of your personal data\n- Rectification: correct inaccurate or incomplete data\n- Erasure: request deletion of your data\n- Restriction: restrict the processing of your data\n- Portability: receive your data in a structured format\n- Objection: object to the processing of your data\n- Withdraw consent: at any time',
+    'privacy.section6.title': 'Data Retention',
+    'privacy.section6.content': 'We retain your personal data for as long as necessary to fulfill the purposes for which it was collected, including legal, accounting, or reporting requirements. Generally, customer data is retained for 5 years after the last service provided.',
+    'privacy.section7.title': 'Data Security',
+    'privacy.section7.content': 'We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction. This includes SSL encryption, restricted access, and regular backups.',
+    'privacy.section8.title': 'Contact and Complaints',
+    'privacy.section8.content': 'To exercise your rights or make privacy inquiries, contact us at admin@drone-partss.com. If you believe that the processing of your data violates regulations, you can file a complaint with the relevant Data Protection Authority.',
+    'privacy.contact.title': 'Privacy Contact',
+    'privacy.contact.description': 'If you have questions about this policy or wish to exercise your rights:',
 
     // Auth
     'auth.login': 'Log In',

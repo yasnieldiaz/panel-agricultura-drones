@@ -472,9 +472,14 @@ export default function Landing() {
               </div>
               <span className="font-bold gradient-text">DroneGarden</span>
             </Link>
-            <p className="text-white/40 text-sm">
-              © 2024 DroneGarden. {t('footer.rights')}
-            </p>
+            <div className="flex items-center gap-6">
+              <Link to="/privacy" className="text-white/40 hover:text-white/60 text-sm transition-colors">
+                {t('footer.privacy')}
+              </Link>
+              <p className="text-white/40 text-sm">
+                © 2024 DroneGarden. {t('footer.rights')}
+              </p>
+            </div>
           </div>
         </div>
       </footer>
