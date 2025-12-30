@@ -1,71 +1,67 @@
-import 'dotenv/config'
-import express from 'express'
-import cors from 'cors'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-import { Vonage } from '@vonage/server-sdk'
-import nodemailer from 'nodemailer'
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const mysql = require('mysql2/promise');
+const fs = require('fs');
+const path = require('path');
+const { Vonage } = require('@vonage/server-sdk');
+const nodemailer = require('nodemailer');
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-const app = express()
-const PORT = process.env.PORT || 3001
-
-// Middleware
-app.use(cors())
-app.use(express.json())
+const app = express();
+const PORT = process.env.PORT || 3001;
+const JWT_SECRET = process.env.JWT_SECRET || 'drone-panel-secret-key-2024';
 
 // Config file path
-const CONFIG_FILE = path.join(__dirname, 'config.json')
+const CONFIG_FILE = path.join(__dirname, 'config.json');
 
 // Load or create config
 function loadConfig() {
   try {
     if (fs.existsSync(CONFIG_FILE)) {
-      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'))
+      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
     }
   } catch (error) {
-    console.error('Error loading config:', error)
+    console.error('Error loading config:', error);
   }
   return {
     vonage: {
       apiKey: process.env.VONAGE_API_KEY || '',
       apiSecret: process.env.VONAGE_API_SECRET || '',
-      fromNumber: process.env.VONAGE_FROM_NUMBER || 'DroneGarden'
+      fromNumber: process.env.VONAGE_FROM_NUMBER || 'Drone Service'
     },
     smtp: {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: process.env.SMTP_PORT || '587',
       user: process.env.SMTP_USER || '',
       pass: process.env.SMTP_PASS || '',
-      fromEmail: process.env.FROM_EMAIL || 'noreply@dronegarden.com'
+      fromEmail: process.env.FROM_EMAIL || 'noreply@droneservice.com'
     }
-  }
+  };
 }
 
 function saveConfig(config) {
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2))
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
 }
 
 // Current configuration
-let config = loadConfig()
+let config = loadConfig();
 
 // Create Vonage client
 function createVonageClient() {
-  if (config.vonage.apiKey && config.vonage.apiSecret) {
+  if (config.vonage && config.vonage.apiKey && config.vonage.apiSecret) {
     return new Vonage({
       apiKey: config.vonage.apiKey,
       apiSecret: config.vonage.apiSecret
-    })
+    });
   }
-  return null
+  return null;
 }
 
 // Create email transporter
 function createEmailTransporter() {
-  if (config.smtp.user && config.smtp.pass) {
+  if (config.smtp && config.smtp.user && config.smtp.pass) {
     return nodemailer.createTransport({
       host: config.smtp.host,
       port: parseInt(config.smtp.port),
@@ -74,72 +70,237 @@ function createEmailTransporter() {
         user: config.smtp.user,
         pass: config.smtp.pass
       }
-    })
+    });
   }
-  return null
+  return null;
 }
 
-let vonage = createVonageClient()
-let emailTransporter = createEmailTransporter()
+let vonage = createVonageClient();
+let emailTransporter = createEmailTransporter();
 
-// Helper to get current from values
 function getFromNumber() {
-  return config.vonage.fromNumber || 'DroneGarden'
+  return config.vonage?.fromNumber || 'Drone Service';
 }
 
 function getFromEmail() {
-  return config.smtp.fromEmail || 'noreply@dronegarden.com'
+  return config.smtp?.fromEmail || 'noreply@droneservice.com';
 }
 
-// ============ CONFIG ENDPOINTS ============
+// Allowed origins for CORS
+const allowedOrigins = [
+  'https://cieniowanie.droneagri.pl',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173'
+];
+
+// Middleware
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Allow all for now
+  },
+  credentials: true
+}));
+app.use(express.json());
+
+// Database connection pool
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'panel_drones',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+// Admin emails
+const ADMIN_EMAILS = ['admin@drone-partss.com'];
+
+const isAdminEmail = (email) => {
+  return ADMIN_EMAILS.includes(email?.toLowerCase());
+};
+
+// Auth middleware
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token requerido' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const [rows] = await pool.execute('SELECT id, email, role, name FROM users WHERE id = ?', [decoded.userId]);
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Usuario no encontrado' });
+    }
+
+    req.user = rows[0];
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: 'Token inválido' });
+  }
+};
+
+// Routes
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Register
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+    }
+
+    // Check if user exists
+    const [existing] = await pool.execute('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'El email ya está registrado' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const role = isAdminEmail(email) ? 'admin' : 'user';
+
+    // Insert user
+    const [result] = await pool.execute(
+      'INSERT INTO users (email, password, role, name) VALUES (?, ?, ?, ?)',
+      [email.toLowerCase(), hashedPassword, role, name || null]
+    );
+
+    // Generate token
+    const token = jwt.sign({ userId: result.insertId }, JWT_SECRET, { expiresIn: '7d' });
+
+    res.status(201).json({
+      user: {
+        id: result.insertId,
+        email: email.toLowerCase(),
+        role,
+        name
+      },
+      token
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({ error: 'Error al registrar usuario' });
+  }
+});
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+    }
+
+    // Find user
+    const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const user = rows[0];
+
+    // Verify password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // Generate token
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name
+      },
+      token
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Error al iniciar sesión' });
+  }
+});
+
+// Get current user
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+  res.json({ user: req.user });
+});
+
+// Logout (client-side, just return success)
+app.post('/api/auth/logout', (req, res) => {
+  res.json({ success: true });
+});
+
+// ==================== CONFIG ENDPOINTS ====================
 
 // Get current config (without secrets)
 app.get('/api/config', (req, res) => {
   res.json({
     vonage: {
-      apiKey: config.vonage.apiKey ? config.vonage.apiKey.substring(0, 4) + '****' : '',
-      fromNumber: config.vonage.fromNumber
+      apiKey: config.vonage?.apiKey ? config.vonage.apiKey.substring(0, 4) + '****' : '',
+      fromNumber: config.vonage?.fromNumber || 'Drone Service'
     },
     smtp: {
-      host: config.smtp.host,
-      port: config.smtp.port,
-      user: config.smtp.user,
-      fromEmail: config.smtp.fromEmail
+      host: config.smtp?.host || 'smtp.gmail.com',
+      port: config.smtp?.port || '587',
+      user: config.smtp?.user || '',
+      fromEmail: config.smtp?.fromEmail || ''
     },
     status: {
-      vonage: !!(config.vonage.apiKey && config.vonage.apiSecret),
-      smtp: !!(config.smtp.user && config.smtp.pass)
+      vonage: !!(config.vonage?.apiKey && config.vonage?.apiSecret),
+      smtp: !!(config.smtp?.user && config.smtp?.pass)
     }
-  })
-})
+  });
+});
 
 // Update Vonage config
 app.post('/api/config/vonage', (req, res) => {
-  const { apiKey, apiSecret, fromNumber } = req.body
+  const { apiKey, apiSecret, fromNumber } = req.body;
 
   if (!apiKey || !apiSecret) {
-    return res.status(400).json({ error: 'API Key and API Secret are required' })
+    return res.status(400).json({ error: 'API Key and API Secret are required' });
   }
 
   config.vonage = {
     apiKey,
     apiSecret,
-    fromNumber: fromNumber || 'DroneGarden'
-  }
+    fromNumber: fromNumber || 'Drone Service'
+  };
 
-  saveConfig(config)
-  vonage = createVonageClient()
+  saveConfig(config);
+  vonage = createVonageClient();
 
-  console.log('Vonage configuration updated')
-  res.json({ success: true, message: 'Vonage configuration saved' })
-})
+  console.log('Vonage configuration updated');
+  res.json({ success: true, message: 'Vonage configuration saved' });
+});
 
 // Update SMTP config
 app.post('/api/config/smtp', (req, res) => {
-  const { host, port, user, pass, fromEmail } = req.body
+  const { host, port, user, pass, fromEmail } = req.body;
 
   if (!user || !pass) {
-    return res.status(400).json({ error: 'SMTP user and password are required' })
+    return res.status(400).json({ error: 'SMTP user and password are required' });
   }
 
   config.smtp = {
@@ -148,375 +309,147 @@ app.post('/api/config/smtp', (req, res) => {
     user,
     pass,
     fromEmail: fromEmail || user
-  }
+  };
 
-  saveConfig(config)
-  emailTransporter = createEmailTransporter()
+  saveConfig(config);
+  emailTransporter = createEmailTransporter();
 
-  console.log('SMTP configuration updated')
-  res.json({ success: true, message: 'SMTP configuration saved' })
-})
+  console.log('SMTP configuration updated');
+  res.json({ success: true, message: 'SMTP configuration saved' });
+});
 
 // Test Vonage connection
 app.post('/api/config/test-vonage', async (req, res) => {
   if (!vonage) {
-    return res.status(400).json({ error: 'Vonage not configured' })
+    return res.status(400).json({ error: 'Vonage not configured' });
   }
 
   try {
-    // Just verify the credentials are valid by checking account balance
-    const response = await fetch(`https://rest.nexmo.com/account/get-balance?api_key=${config.vonage.apiKey}&api_secret=${config.vonage.apiSecret}`)
-    const data = await response.json()
+    const response = await fetch(`https://rest.nexmo.com/account/get-balance?api_key=${config.vonage.apiKey}&api_secret=${config.vonage.apiSecret}`);
+    const data = await response.json();
 
     if (data.value !== undefined) {
-      res.json({ success: true, balance: data.value })
+      res.json({ success: true, balance: data.value });
     } else {
-      res.status(400).json({ error: 'Invalid credentials' })
+      res.status(400).json({ error: 'Invalid credentials' });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: error.message });
   }
-})
+});
 
 // Test SMTP connection
 app.post('/api/config/test-smtp', async (req, res) => {
   if (!emailTransporter) {
-    return res.status(400).json({ error: 'SMTP not configured' })
+    return res.status(400).json({ error: 'SMTP not configured' });
   }
 
   try {
-    await emailTransporter.verify()
-    res.json({ success: true, message: 'SMTP connection successful' })
+    await emailTransporter.verify();
+    res.json({ success: true, message: 'SMTP connection successful' });
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: error.message });
   }
-})
+});
 
-// ============ SMS ENDPOINTS ============
+// ==================== SERVICE REQUESTS ====================
 
-// SMS endpoint
-app.post('/api/sms/send', async (req, res) => {
-  const { to, message, clientName, service, date, time } = req.body
-
-  if (!to || !message) {
-    return res.status(400).json({ error: 'Missing required fields: to, message' })
-  }
-
-  // Clean phone number (remove spaces, ensure format)
-  const cleanPhone = to.replace(/\s+/g, '').replace(/^\+/, '')
-
-  if (!vonage) {
-    return res.status(400).json({ error: 'Vonage SMS not configured' })
-  }
-
+// Create service request (requires auth)
+app.post('/api/service-requests', authenticateToken, async (req, res) => {
   try {
-    const response = await vonage.sms.send({
-      to: cleanPhone,
-      from: getFromNumber(),
-      text: message
-    })
+    const { service, scheduledDate, scheduledTime, name, email, phone, location, area, notes } = req.body;
 
-    const messageResponse = response.messages[0]
-
-    if (messageResponse.status === '0') {
-      console.log(`SMS sent successfully to ${to}`)
-      res.json({
-        success: true,
-        messageId: messageResponse['message-id'],
-        to: to
-      })
-    } else {
-      console.error(`SMS failed: ${messageResponse['error-text']}`)
-      res.status(400).json({
-        error: messageResponse['error-text'],
-        status: messageResponse.status
-      })
+    if (!service || !scheduledDate || !scheduledTime || !name || !email || !phone || !location) {
+      return res.status(400).json({ error: 'Todos los campos requeridos deben completarse' });
     }
+
+    const [result] = await pool.execute(
+      `INSERT INTO service_requests (user_id, service, scheduled_date, scheduled_time, name, email, phone, location, area, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [req.user.id, service, scheduledDate, scheduledTime, name, email, phone, location, area || null, notes || null]
+    );
+
+    res.status(201).json({
+      id: result.insertId,
+      service,
+      scheduledDate,
+      scheduledTime,
+      name,
+      email,
+      phone,
+      location,
+      area,
+      notes,
+      status: 'pending',
+      message: 'Solicitud creada exitosamente'
+    });
   } catch (error) {
-    console.error('Vonage SMS error:', error)
-    res.status(500).json({ error: 'Failed to send SMS', details: error.message })
+    console.error('Create service request error:', error);
+    res.status(500).json({ error: 'Error al crear la solicitud' });
   }
-})
+});
 
-// Send confirmation SMS
-app.post('/api/sms/confirm-service', async (req, res) => {
-  const { phone, clientName, service, date, time, location, language = 'es' } = req.body
-
-  if (!phone || !clientName || !service || !date || !time) {
-    return res.status(400).json({ error: 'Missing required fields' })
-  }
-
-  // Message templates by language
-  const messages = {
-    es: `¡Hola ${clientName}! Tu servicio de ${service} ha sido confirmado para el ${date} a las ${time}. Ubicación: ${location}. - DroneGarden`,
-    en: `Hi ${clientName}! Your ${service} service has been confirmed for ${date} at ${time}. Location: ${location}. - DroneGarden`,
-    pl: `Cześć ${clientName}! Twoja usługa ${service} została potwierdzona na ${date} o ${time}. Lokalizacja: ${location}. - DroneGarden`
-  }
-
-  const message = messages[language] || messages.es
-  const cleanPhone = phone.replace(/\s+/g, '').replace(/^\+/, '')
-
-  if (!vonage) {
-    return res.status(400).json({ error: 'Vonage SMS not configured' })
-  }
-
+// Get user's service requests (requires auth)
+app.get('/api/service-requests', authenticateToken, async (req, res) => {
   try {
-    const response = await vonage.sms.send({
-      to: cleanPhone,
-      from: getFromNumber(),
-      text: message
-    })
+    const [rows] = await pool.execute(
+      'SELECT * FROM service_requests WHERE user_id = ? ORDER BY created_at DESC',
+      [req.user.id]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Get service requests error:', error);
+    res.status(500).json({ error: 'Error al obtener solicitudes' });
+  }
+});
 
-    const messageResponse = response.messages[0]
-
-    if (messageResponse.status === '0') {
-      console.log(`Confirmation SMS sent to ${phone} for ${clientName}`)
-      res.json({
-        success: true,
-        messageId: messageResponse['message-id']
-      })
-    } else {
-      console.error(`SMS failed: ${messageResponse['error-text']}`)
-      res.status(400).json({ error: messageResponse['error-text'] })
+// Get all service requests (admin only)
+app.get('/api/admin/service-requests', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
     }
+
+    const [rows] = await pool.execute(
+      `SELECT sr.*, u.email as user_email
+       FROM service_requests sr
+       LEFT JOIN users u ON sr.user_id = u.id
+       ORDER BY sr.created_at DESC`
+    );
+    res.json(rows);
   } catch (error) {
-    console.error('Vonage SMS error:', error)
-    res.status(500).json({ error: 'Failed to send SMS', details: error.message })
+    console.error('Get all service requests error:', error);
+    res.status(500).json({ error: 'Error al obtener solicitudes' });
   }
-})
+});
 
-// Send completion SMS
-app.post('/api/sms/complete-service', async (req, res) => {
-  const { phone, clientName, service, language = 'es' } = req.body
-
-  if (!phone || !clientName || !service) {
-    return res.status(400).json({ error: 'Missing required fields' })
-  }
-
-  const messages = {
-    es: `¡Hola ${clientName}! Tu servicio de ${service} ha sido completado con éxito. ¡Gracias por confiar en DroneGarden! Si tienes alguna pregunta, no dudes en contactarnos.`,
-    en: `Hi ${clientName}! Your ${service} service has been successfully completed. Thank you for trusting DroneGarden! If you have any questions, don't hesitate to contact us.`,
-    pl: `Cześć ${clientName}! Twoja usługa ${service} została pomyślnie zakończona. Dziękujemy za zaufanie DroneGarden! Jeśli masz pytania, skontaktuj się z nami.`
-  }
-
-  const message = messages[language] || messages.es
-  const cleanPhone = phone.replace(/\s+/g, '').replace(/^\+/, '')
-
-  if (!vonage) {
-    return res.status(400).json({ error: 'Vonage SMS not configured' })
-  }
-
+// Update service request status (admin only)
+app.put('/api/admin/service-requests/:id/status', authenticateToken, async (req, res) => {
   try {
-    const response = await vonage.sms.send({
-      to: cleanPhone,
-      from: getFromNumber(),
-      text: message
-    })
-
-    const messageResponse = response.messages[0]
-
-    if (messageResponse.status === '0') {
-      console.log(`Completion SMS sent to ${phone} for ${clientName}`)
-      res.json({
-        success: true,
-        messageId: messageResponse['message-id']
-      })
-    } else {
-      res.status(400).json({ error: messageResponse['error-text'] })
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
     }
+
+    const { status } = req.body;
+    const validStatuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Estado inválido' });
+    }
+
+    await pool.execute(
+      'UPDATE service_requests SET status = ? WHERE id = ?',
+      [status, req.params.id]
+    );
+
+    res.json({ success: true, message: 'Estado actualizado' });
   } catch (error) {
-    console.error('Vonage SMS error:', error)
-    res.status(500).json({ error: 'Failed to send SMS', details: error.message })
+    console.error('Update status error:', error);
+    res.status(500).json({ error: 'Error al actualizar estado' });
   }
-})
+});
 
-// Email confirmation endpoint
-app.post('/api/email/confirm-service', async (req, res) => {
-  const { email, clientName, service, date, time, location, area, language = 'es' } = req.body
-
-  if (!email || !clientName || !service || !date || !time) {
-    return res.status(400).json({ error: 'Missing required fields' })
-  }
-
-  // Email templates by language
-  const subjects = {
-    es: `✅ Confirmación de Servicio - DroneGarden`,
-    en: `✅ Service Confirmation - DroneGarden`,
-    pl: `✅ Potwierdzenie Usługi - DroneGarden`
-  }
-
-  const htmlTemplates = {
-    es: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 40px; border-radius: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="background: linear-gradient(90deg, #10b981, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">🚁 DroneGarden</h1>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; margin-bottom: 20px;">
-          <h2 style="color: #10b981; margin-top: 0;">¡Hola ${clientName}!</h2>
-          <p style="font-size: 16px; line-height: 1.6;">Tu servicio ha sido <strong style="color: #10b981;">confirmado</strong>. Aquí están los detalles:</p>
-          <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Servicio:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${service}</td></tr>
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Fecha:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${date}</td></tr>
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Hora:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${time}</td></tr>
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Ubicación:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${location}</td></tr>
-            ${area ? `<tr><td style="padding: 10px 0; color: #94a3b8;">Área:</td><td style="padding: 10px 0; text-align: right; font-weight: bold;">${area} hectáreas</td></tr>` : ''}
-          </table>
-        </div>
-        <p style="text-align: center; color: #94a3b8; font-size: 14px;">Si tienes alguna pregunta, no dudes en contactarnos.</p>
-        <p style="text-align: center; color: #10b981; font-weight: bold;">¡Gracias por confiar en DroneGarden!</p>
-      </div>
-    `,
-    en: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 40px; border-radius: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="background: linear-gradient(90deg, #10b981, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">🚁 DroneGarden</h1>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; margin-bottom: 20px;">
-          <h2 style="color: #10b981; margin-top: 0;">Hello ${clientName}!</h2>
-          <p style="font-size: 16px; line-height: 1.6;">Your service has been <strong style="color: #10b981;">confirmed</strong>. Here are the details:</p>
-          <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Service:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${service}</td></tr>
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Date:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${date}</td></tr>
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Time:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${time}</td></tr>
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Location:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${location}</td></tr>
-            ${area ? `<tr><td style="padding: 10px 0; color: #94a3b8;">Area:</td><td style="padding: 10px 0; text-align: right; font-weight: bold;">${area} hectares</td></tr>` : ''}
-          </table>
-        </div>
-        <p style="text-align: center; color: #94a3b8; font-size: 14px;">If you have any questions, feel free to contact us.</p>
-        <p style="text-align: center; color: #10b981; font-weight: bold;">Thank you for trusting DroneGarden!</p>
-      </div>
-    `,
-    pl: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 40px; border-radius: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="background: linear-gradient(90deg, #10b981, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">🚁 DroneGarden</h1>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; margin-bottom: 20px;">
-          <h2 style="color: #10b981; margin-top: 0;">Cześć ${clientName}!</h2>
-          <p style="font-size: 16px; line-height: 1.6;">Twoja usługa została <strong style="color: #10b981;">potwierdzona</strong>. Oto szczegóły:</p>
-          <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Usługa:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${service}</td></tr>
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Data:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${date}</td></tr>
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Godzina:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${time}</td></tr>
-            <tr><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Lokalizacja:</td><td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: right; font-weight: bold;">${location}</td></tr>
-            ${area ? `<tr><td style="padding: 10px 0; color: #94a3b8;">Powierzchnia:</td><td style="padding: 10px 0; text-align: right; font-weight: bold;">${area} hektarów</td></tr>` : ''}
-          </table>
-        </div>
-        <p style="text-align: center; color: #94a3b8; font-size: 14px;">Jeśli masz pytania, skontaktuj się z nami.</p>
-        <p style="text-align: center; color: #10b981; font-weight: bold;">Dziękujemy za zaufanie DroneGarden!</p>
-      </div>
-    `
-  }
-
-  if (!emailTransporter) {
-    return res.status(400).json({ error: 'Email SMTP not configured' })
-  }
-
-  try {
-    const info = await emailTransporter.sendMail({
-      from: `"DroneGarden" <${getFromEmail()}>`,
-      to: email,
-      subject: subjects[language] || subjects.es,
-      html: htmlTemplates[language] || htmlTemplates.es
-    })
-
-    console.log(`Confirmation email sent to ${email}`)
-    res.json({ success: true, messageId: info.messageId })
-  } catch (error) {
-    console.error('Email error:', error)
-    res.status(500).json({ error: 'Failed to send email', details: error.message })
-  }
-})
-
-// Email completion endpoint
-app.post('/api/email/complete-service', async (req, res) => {
-  const { email, clientName, service, language = 'es' } = req.body
-
-  if (!email || !clientName || !service) {
-    return res.status(400).json({ error: 'Missing required fields' })
-  }
-
-  const subjects = {
-    es: `✅ Servicio Completado - DroneGarden`,
-    en: `✅ Service Completed - DroneGarden`,
-    pl: `✅ Usługa Zakończona - DroneGarden`
-  }
-
-  const htmlTemplates = {
-    es: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 40px; border-radius: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="background: linear-gradient(90deg, #10b981, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">🚁 DroneGarden</h1>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; margin-bottom: 20px; text-align: center;">
-          <div style="font-size: 60px; margin-bottom: 20px;">✅</div>
-          <h2 style="color: #10b981; margin-top: 0;">¡Servicio Completado!</h2>
-          <p style="font-size: 16px; line-height: 1.6;">Hola <strong>${clientName}</strong>,</p>
-          <p style="font-size: 16px; line-height: 1.6;">Nos complace informarte que tu servicio de <strong style="color: #10b981;">${service}</strong> ha sido completado con éxito.</p>
-        </div>
-        <p style="text-align: center; color: #94a3b8; font-size: 14px;">Si tienes alguna pregunta sobre el servicio realizado, no dudes en contactarnos.</p>
-        <p style="text-align: center; color: #10b981; font-weight: bold; font-size: 18px;">¡Gracias por confiar en DroneGarden!</p>
-      </div>
-    `,
-    en: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 40px; border-radius: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="background: linear-gradient(90deg, #10b981, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">🚁 DroneGarden</h1>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; margin-bottom: 20px; text-align: center;">
-          <div style="font-size: 60px; margin-bottom: 20px;">✅</div>
-          <h2 style="color: #10b981; margin-top: 0;">Service Completed!</h2>
-          <p style="font-size: 16px; line-height: 1.6;">Hello <strong>${clientName}</strong>,</p>
-          <p style="font-size: 16px; line-height: 1.6;">We are pleased to inform you that your <strong style="color: #10b981;">${service}</strong> service has been successfully completed.</p>
-        </div>
-        <p style="text-align: center; color: #94a3b8; font-size: 14px;">If you have any questions about the service, feel free to contact us.</p>
-        <p style="text-align: center; color: #10b981; font-weight: bold; font-size: 18px;">Thank you for trusting DroneGarden!</p>
-      </div>
-    `,
-    pl: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 40px; border-radius: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="background: linear-gradient(90deg, #10b981, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">🚁 DroneGarden</h1>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; margin-bottom: 20px; text-align: center;">
-          <div style="font-size: 60px; margin-bottom: 20px;">✅</div>
-          <h2 style="color: #10b981; margin-top: 0;">Usługa Zakończona!</h2>
-          <p style="font-size: 16px; line-height: 1.6;">Cześć <strong>${clientName}</strong>,</p>
-          <p style="font-size: 16px; line-height: 1.6;">Z przyjemnością informujemy, że Twoja usługa <strong style="color: #10b981;">${service}</strong> została pomyślnie zakończona.</p>
-        </div>
-        <p style="text-align: center; color: #94a3b8; font-size: 14px;">Jeśli masz pytania dotyczące wykonanej usługi, skontaktuj się z nami.</p>
-        <p style="text-align: center; color: #10b981; font-weight: bold; font-size: 18px;">Dziękujemy za zaufanie DroneGarden!</p>
-      </div>
-    `
-  }
-
-  if (!emailTransporter) {
-    return res.status(400).json({ error: 'Email SMTP not configured' })
-  }
-
-  try {
-    const info = await emailTransporter.sendMail({
-      from: `"DroneGarden" <${getFromEmail()}>`,
-      to: email,
-      subject: subjects[language] || subjects.es,
-      html: htmlTemplates[language] || htmlTemplates.es
-    })
-
-    console.log(`Completion email sent to ${email}`)
-    res.json({ success: true, messageId: info.messageId })
-  } catch (error) {
-    console.error('Email error:', error)
-    res.status(500).json({ error: 'Failed to send email', details: error.message })
-  }
-})
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'DroneGarden SMS & Email API' })
-})
-
+// Start server
 app.listen(PORT, () => {
-  console.log(`🚀 SMS & Email Server running on http://localhost:${PORT}`)
-  console.log(`📱 Vonage API configured: ${vonage ? 'Yes' : 'No - Configure via API or .env'}`)
-  console.log(`📧 Email SMTP configured: ${emailTransporter ? 'Yes' : 'No - Configure via API or .env'}`)
-})
+  console.log(`API Server running on port ${PORT}`);
+});
