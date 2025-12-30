@@ -45,7 +45,7 @@ export default function LanguageSelector() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-48 py-2 glass rounded-xl overflow-hidden z-50"
+            className="absolute right-0 mt-2 w-48 py-2 rounded-xl overflow-hidden z-50 bg-slate-900/95 backdrop-blur-xl border border-white/20 shadow-xl"
           >
             {languages.map((lang) => (
               <button
