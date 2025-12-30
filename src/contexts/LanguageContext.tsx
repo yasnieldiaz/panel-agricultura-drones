@@ -187,6 +187,8 @@ const translations: Record<Language, Record<string, string>> = {
     'serviceRequest.success.title': '¡Solicitud Enviada!',
     'serviceRequest.success.message': 'Hemos recibido tu solicitud. Te contactaremos en menos de 24 horas para confirmar los detalles.',
     'serviceRequest.success.close': 'Cerrar',
+    'serviceRequest.floatingButton': 'Solicitar Servicio',
+    'serviceRequest.sending': 'Enviando...',
 
     // Admin Dashboard
     'admin.title': 'Panel de Administración',
@@ -404,6 +406,8 @@ const translations: Record<Language, Record<string, string>> = {
     'serviceRequest.success.title': 'Zamówienie Wysłane!',
     'serviceRequest.success.message': 'Otrzymaliśmy Twoje zamówienie. Skontaktujemy się z Tobą w ciągu 24 godzin, aby potwierdzić szczegóły.',
     'serviceRequest.success.close': 'Zamknij',
+    'serviceRequest.floatingButton': 'Zamów Usługę',
+    'serviceRequest.sending': 'Wysyłanie...',
 
     // Admin Dashboard
     'admin.title': 'Panel Administracyjny',
@@ -621,6 +625,8 @@ const translations: Record<Language, Record<string, string>> = {
     'serviceRequest.success.title': 'Request Sent!',
     'serviceRequest.success.message': 'We have received your request. We will contact you within 24 hours to confirm the details.',
     'serviceRequest.success.close': 'Close',
+    'serviceRequest.floatingButton': 'Request Service',
+    'serviceRequest.sending': 'Sending...',
 
     // Admin Dashboard
     'admin.title': 'Admin Dashboard',

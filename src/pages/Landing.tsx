@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Plane,
@@ -10,11 +10,14 @@ import {
   Phone,
   Mail,
   Menu,
-  X
+  X,
+  CalendarPlus
 } from 'lucide-react'
 import { useState } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../hooks/useAuth'
 import LanguageSelector from '../components/LanguageSelector'
+import ServiceRequestModal from '../components/ServiceRequestModal'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -31,7 +34,18 @@ const staggerContainer = {
 
 export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [serviceModalOpen, setServiceModalOpen] = useState(false)
   const { t } = useLanguage()
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  const handleRequestService = () => {
+    if (!user) {
+      navigate('/auth')
+    } else {
+      setServiceModalOpen(true)
+    }
+  }
 
   const services = [
     {
@@ -245,12 +259,8 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {services.map((service, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="group card-glass cursor-pointer"
               >
                 <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${service.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
@@ -258,7 +268,7 @@ export default function Landing() {
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-2">{t(service.titleKey)}</h3>
                 <p className="text-white/60 text-sm">{t(service.descKey)}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -507,6 +517,22 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {/* Floating Request Service Button */}
+      <button
+        onClick={handleRequestService}
+        className="fixed bottom-6 right-6 z-40 btn-primary flex items-center gap-2 shadow-lg shadow-emerald-500/30"
+      >
+        <CalendarPlus className="w-5 h-5" />
+        <span className="hidden sm:inline">{t('serviceRequest.floatingButton')}</span>
+      </button>
+
+      {/* Service Request Modal */}
+      <ServiceRequestModal
+        isOpen={serviceModalOpen}
+        onClose={() => setServiceModalOpen(false)}
+        onLoginRequired={() => navigate('/auth')}
+      />
     </div>
   )
 }

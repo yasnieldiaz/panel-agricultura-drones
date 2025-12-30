@@ -149,7 +149,7 @@ export default function Dashboard() {
     )
   }
 
-  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario'
+  const userName = user?.name || user?.email?.split('@')[0] || 'Usuario'
 
   return (
     <div className="min-h-screen pb-8">

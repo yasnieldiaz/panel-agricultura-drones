@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Calendar, Clock, MapPin, Plane, Leaf, Mountain, Check, Send } from 'lucide-react'
+import { X, Calendar, Clock, MapPin, Plane, Leaf, Mountain, Check, Send, Loader2, AlertCircle } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { serviceRequestsApi } from '../lib/api'
+import { useAuth } from '../hooks/useAuth'
 
 interface ServiceRequestModalProps {
   isOpen: boolean
   onClose: () => void
+  onLoginRequired?: () => void
 }
 
 interface ServiceOption {
@@ -27,8 +30,9 @@ const timeSlots = [
   '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
 ]
 
-export default function ServiceRequestModal({ isOpen, onClose }: ServiceRequestModalProps) {
+export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }: ServiceRequestModalProps) {
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [step, setStep] = useState(1)
   const [selectedService, setSelectedService] = useState<string>('')
   const [selectedDate, setSelectedDate] = useState<string>('')
@@ -42,6 +46,8 @@ export default function ServiceRequestModal({ isOpen, onClose }: ServiceRequestM
     notes: ''
   })
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
@@ -50,16 +56,35 @@ export default function ServiceRequestModal({ isOpen, onClose }: ServiceRequestM
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would send the data to your backend
-    console.log({
-      service: selectedService,
-      date: selectedDate,
-      time: selectedTime,
-      ...formData
-    })
-    setSubmitted(true)
+
+    if (!user) {
+      onLoginRequired?.()
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      await serviceRequestsApi.create({
+        service: selectedService,
+        scheduledDate: selectedDate,
+        scheduledTime: selectedTime,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        location: formData.location,
+        area: formData.area,
+        notes: formData.notes
+      })
+      setSubmitted(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al enviar solicitud')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const resetModal = () => {
@@ -69,6 +94,8 @@ export default function ServiceRequestModal({ isOpen, onClose }: ServiceRequestM
     setSelectedTime('')
     setFormData({ name: '', email: '', phone: '', location: '', area: '', notes: '' })
     setSubmitted(false)
+    setError(null)
+    setLoading(false)
   }
 
   const handleClose = () => {
@@ -343,36 +370,49 @@ export default function ServiceRequestModal({ isOpen, onClose }: ServiceRequestM
 
             {/* Footer */}
             {!submitted && (
-              <div className="flex-shrink-0 p-4 sm:p-6 border-t border-white/10 flex justify-between">
-                {step > 1 ? (
-                  <button
-                    onClick={() => setStep(step - 1)}
-                    className="btn-glass"
-                  >
-                    {t('serviceRequest.back')}
-                  </button>
-                ) : (
-                  <div />
+              <div className="flex-shrink-0 p-4 sm:p-6 border-t border-white/10">
+                {error && (
+                  <div className="flex items-center gap-2 text-red-400 text-sm mb-4 p-3 bg-red-500/10 rounded-lg">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    {error}
+                  </div>
                 )}
+                <div className="flex justify-between">
+                  {step > 1 ? (
+                    <button
+                      onClick={() => setStep(step - 1)}
+                      className="btn-glass"
+                      disabled={loading}
+                    >
+                      {t('serviceRequest.back')}
+                    </button>
+                  ) : (
+                    <div />
+                  )}
 
-                {step < 3 ? (
-                  <button
-                    onClick={() => setStep(step + 1)}
-                    disabled={step === 1 ? !canProceedStep1 : !canProceedStep2}
-                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {t('serviceRequest.next')}
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!canSubmit}
-                    className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Send className="w-4 h-4" />
-                    {t('serviceRequest.submit')}
-                  </button>
-                )}
+                  {step < 3 ? (
+                    <button
+                      onClick={() => setStep(step + 1)}
+                      disabled={step === 1 ? !canProceedStep1 : !canProceedStep2}
+                      className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {t('serviceRequest.next')}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSubmit}
+                      disabled={!canSubmit || loading}
+                      className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                      {loading ? t('serviceRequest.sending') : t('serviceRequest.submit')}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </motion.div>

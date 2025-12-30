@@ -6,8 +6,6 @@ import {
   LogOut,
   Calendar as CalendarIcon,
   List,
-  ChevronLeft,
-  ChevronRight,
   MapPin,
   Clock,
   CheckCircle2,
@@ -20,12 +18,13 @@ import {
   X,
   Shield,
   MessageSquare,
-  Send,
-  Settings
+  Settings,
+  Plus
 } from 'lucide-react'
 import { useLanguage, type Language } from '../contexts/LanguageContext'
 import { useAuth } from '../hooks/useAuth'
 import LanguageSelector from '../components/LanguageSelector'
+import ServiceRequestModal from '../components/ServiceRequestModal'
 import { sendConfirmationNotifications, sendCompletionNotifications } from '../services/smsService'
 
 // Types
@@ -154,13 +153,14 @@ type TabType = 'all' | 'pending' | 'scheduled' | 'completed'
 
 export default function AdminDashboard() {
   const { t, language } = useLanguage()
-  const { user, signOut, loading } = useAuth()
+  const { signOut, loading } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TabType>('all')
   const [requests, setRequests] = useState(mockRequests)
-  const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null)
+  const [_selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null)
   const [sendingSMS, setSendingSMS] = useState<string | null>(null)
   const [smsStatus, setSmsStatus] = useState<{ id: string; success: boolean; message: string } | null>(null)
+  const [serviceModalOpen, setServiceModalOpen] = useState(false)
 
   const handleLogout = async () => {
     await signOut()
@@ -515,6 +515,21 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
       </main>
+
+      {/* Floating Request Service Button */}
+      <button
+        onClick={() => setServiceModalOpen(true)}
+        className="fixed bottom-6 right-6 z-40 btn-primary flex items-center gap-2 shadow-lg shadow-emerald-500/30"
+      >
+        <Plus className="w-5 h-5" />
+        <span className="hidden sm:inline">{t('serviceRequest.floatingButton')}</span>
+      </button>
+
+      {/* Service Request Modal */}
+      <ServiceRequestModal
+        isOpen={serviceModalOpen}
+        onClose={() => setServiceModalOpen(false)}
+      />
     </div>
   )
 }

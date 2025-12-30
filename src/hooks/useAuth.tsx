@@ -1,11 +1,9 @@
 import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react'
-import { supabase } from '../lib/supabase'
+import { api, type User } from '../lib/api'
 import { isAdminEmail } from '../config/admin'
-import type { User, Session } from '@supabase/supabase-js'
 
 interface AuthContextType {
   user: User | null
-  session: Session | null
   loading: boolean
   isAdmin: boolean
   signUp: (email: string, password: string, metadata?: { name?: string; phone?: string }) => Promise<{ error: Error | null }>
@@ -17,48 +15,47 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    // Check for existing session on mount
+    const initAuth = async () => {
+      try {
+        const currentUser = await api.getCurrentUser()
+        setUser(currentUser)
+      } catch {
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
+    initAuth()
   }, [])
 
   const signUp = async (email: string, password: string, metadata?: { name?: string; phone?: string }) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: metadata
-      }
-    })
-    return { error: error as Error | null }
+    try {
+      const { user: newUser } = await api.register(email, password, { name: metadata?.name })
+      setUser(newUser)
+      return { error: null }
+    } catch (error) {
+      return { error: error as Error }
+    }
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-    return { error: error as Error | null }
+    try {
+      const { user: loggedUser } = await api.login(email, password)
+      setUser(loggedUser)
+      return { error: null }
+    } catch (error) {
+      return { error: error as Error }
+    }
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    await api.logout()
+    setUser(null)
   }
 
   const isAdmin = useMemo(() => {
@@ -66,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user?.email])
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )
