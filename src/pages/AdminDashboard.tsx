@@ -21,10 +21,16 @@ import {
   Trash2,
   Play,
   XCircle,
-  RefreshCw
+  RefreshCw,
+  Key,
+  Users,
+  Eye,
+  EyeOff,
+  AlertCircle
 } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../hooks/useAuth'
+import { authApi, usersApi, type AdminUser } from '../lib/api'
 import LanguageSelector from '../components/LanguageSelector'
 import ServiceRequestModal from '../components/ServiceRequestModal'
 import Logo from '../components/Logo'
@@ -72,6 +78,20 @@ export default function AdminDashboard() {
   const [serviceModalOpen, setServiceModalOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null)
 
+  // Password management state
+  const [users, setUsers] = useState<AdminUser[]>([])
+  const [showPasswordSection, setShowPasswordSection] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  const [userPasswordForm, setUserPasswordForm] = useState<{userId: number; newPassword: string} | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
+
   // Fetch service requests from API
   const fetchRequests = async () => {
     if (!token) return
@@ -102,6 +122,72 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchRequests()
   }, [token])
+
+  // Fetch users for password management
+  const fetchUsers = async () => {
+    try {
+      const data = await usersApi.getAll()
+      setUsers(data)
+    } catch (err) {
+      console.error('Error fetching users:', err)
+    }
+  }
+
+  useEffect(() => {
+    if (showPasswordSection) {
+      fetchUsers()
+    }
+  }, [showPasswordSection])
+
+  // Change own password
+  const handleChangeOwnPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPasswordError(null)
+    setPasswordSuccess(null)
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError(t('auth.passwordMismatch'))
+      return
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError(t('resetPassword.minLength'))
+      return
+    }
+
+    setPasswordLoading(true)
+    try {
+      await authApi.changePassword(passwordForm.currentPassword, passwordForm.newPassword)
+      setPasswordSuccess(t('admin.passwordChanged'))
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : t('admin.passwordError'))
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
+  // Change user password (admin)
+  const handleChangeUserPassword = async (userId: number, newPassword: string) => {
+    if (newPassword.length < 6) {
+      setPasswordError(t('resetPassword.minLength'))
+      return
+    }
+
+    setPasswordLoading(true)
+    setPasswordError(null)
+    setPasswordSuccess(null)
+
+    try {
+      await usersApi.changeUserPassword(userId, newPassword)
+      setPasswordSuccess(t('admin.userPasswordChanged'))
+      setUserPasswordForm(null)
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : t('admin.passwordError'))
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
 
   const handleLogout = async () => {
     await signOut()
@@ -506,6 +592,170 @@ export default function AdminDashboard() {
                 ))
               )}
             </div>
+          </div>
+        </motion.div>
+
+        {/* Password Management Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-8"
+        >
+          <div className="glass rounded-2xl p-6">
+            <button
+              onClick={() => setShowPasswordSection(!showPasswordSection)}
+              className="w-full flex items-center justify-between text-left"
+            >
+              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Key className="w-5 h-5 text-emerald-400" />
+                {t('admin.passwordManagement')}
+              </h2>
+              <span className={`text-white/60 transition-transform ${showPasswordSection ? 'rotate-180' : ''}`}>
+                ▼
+              </span>
+            </button>
+
+            {showPasswordSection && (
+              <div className="mt-6 space-y-6">
+                {/* Messages */}
+                {passwordError && (
+                  <div className="p-3 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center gap-2 text-red-300">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-sm">{passwordError}</span>
+                  </div>
+                )}
+                {passwordSuccess && (
+                  <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-2 text-emerald-300">
+                    <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-sm">{passwordSuccess}</span>
+                  </div>
+                )}
+
+                {/* Change Own Password */}
+                <div className="glass-dark rounded-xl p-4">
+                  <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-amber-400" />
+                    {t('admin.changeOwnPassword')}
+                  </h3>
+                  <form onSubmit={handleChangeOwnPassword} className="space-y-3">
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder={t('admin.currentPassword')}
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                        className="input-glass pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder={t('admin.newPassword')}
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                      className="input-glass"
+                      required
+                      minLength={6}
+                    />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder={t('admin.confirmNewPassword')}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                      className="input-glass"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="submit"
+                      disabled={passwordLoading}
+                      className="btn-primary w-full flex items-center justify-center gap-2"
+                    >
+                      {passwordLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Key className="w-4 h-4" />
+                      )}
+                      {t('admin.changePassword')}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Users List */}
+                <div className="glass-dark rounded-xl p-4">
+                  <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-blue-400" />
+                    {t('admin.userAccounts')}
+                  </h3>
+                  <div className="space-y-3">
+                    {users.map(user => (
+                      <div key={user.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-medium">{user.email}</span>
+                            {user.role === 'admin' && (
+                              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded flex items-center gap-1">
+                                <Shield className="w-3 h-3" />
+                                Admin
+                              </span>
+                            )}
+                          </div>
+                          {user.name && <div className="text-sm text-white/60">{user.name}</div>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {userPasswordForm?.userId === user.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type={showPassword ? 'text' : 'password'}
+                                placeholder={t('admin.newPassword')}
+                                value={userPasswordForm.newPassword}
+                                onChange={(e) => setUserPasswordForm({ ...userPasswordForm, newPassword: e.target.value })}
+                                className="input-glass text-sm py-2 px-3 w-40"
+                                minLength={6}
+                              />
+                              <button
+                                onClick={() => handleChangeUserPassword(user.id, userPasswordForm.newPassword)}
+                                disabled={passwordLoading}
+                                className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                              >
+                                {passwordLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                              </button>
+                              <button
+                                onClick={() => setUserPasswordForm(null)}
+                                className="p-2 rounded-lg bg-white/10 text-white/60 hover:bg-white/20"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setUserPasswordForm({ userId: user.id, newPassword: '' })}
+                              className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 text-xs flex items-center gap-1.5"
+                            >
+                              <Key className="w-3 h-3" />
+                              {t('admin.changePassword')}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {users.length === 0 && (
+                      <div className="text-center py-4 text-white/40">
+                        {t('admin.noUsers')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
       </main>

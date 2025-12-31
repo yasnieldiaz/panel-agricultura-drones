@@ -109,6 +109,85 @@ export interface ServiceRequest {
 
 export const api = new ApiClient();
 
+// Auth API extensions
+export const authApi = {
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    return result;
+  },
+
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    return result;
+  },
+
+  async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    return result;
+  },
+};
+
+// Admin Users API
+export interface AdminUser {
+  id: number;
+  email: string;
+  role: string;
+  name: string | null;
+  language: string;
+  created_at: string;
+}
+
+export const usersApi = {
+  async getAll(): Promise<AdminUser[]> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_URL}/admin/users`, {
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    return result;
+  },
+
+  async changeUserPassword(userId: number, newPassword: string): Promise<{ success: boolean; message: string }> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_URL}/admin/users/${userId}/password`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify({ newPassword }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    return result;
+  },
+};
+
 // Service Requests API
 export const serviceRequestsApi = {
   async create(data: ServiceRequest): Promise<ServiceRequest & { message: string }> {

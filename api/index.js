@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { Vonage } = require('@vonage/server-sdk');
 const nodemailer = require('nodemailer');
 
@@ -88,23 +89,371 @@ function getFromEmail() {
 
 // ==================== EMAIL TEMPLATES ====================
 
+// Multi-language service names
 const SERVICE_NAMES = {
-  'fumigation': 'Fumigación con Drones',
-  'mapping': 'Mapeo y Análisis Aéreo',
-  'painting': 'Pintura Industrial con Drones',
-  'rental': 'Alquiler de Drones'
+  es: {
+    'fumigation': 'Fumigación con Drones',
+    'mapping': 'Mapeo y Análisis Aéreo',
+    'painting': 'Pintura Industrial con Drones',
+    'rental': 'Alquiler de Drones'
+  },
+  en: {
+    'fumigation': 'Drone Fumigation',
+    'mapping': 'Aerial Mapping & Analysis',
+    'painting': 'Industrial Drone Painting',
+    'rental': 'Drone Rental'
+  },
+  pl: {
+    'fumigation': 'Fumigacja Dronami',
+    'mapping': 'Mapowanie i Analiza Lotnicza',
+    'painting': 'Malowanie Przemysłowe Dronami',
+    'rental': 'Wynajem Dronów'
+  },
+  cs: {
+    'fumigation': 'Fumigace Drony',
+    'mapping': 'Letecké Mapování a Analýza',
+    'painting': 'Průmyslové Malování Drony',
+    'rental': 'Pronájem Dronů'
+  },
+  sk: {
+    'fumigation': 'Fumigácia Dronmi',
+    'mapping': 'Letecké Mapovanie a Analýza',
+    'painting': 'Priemyselné Maľovanie Dronmi',
+    'rental': 'Prenájom Dronov'
+  }
 };
 
+// Multi-language status names
 const STATUS_NAMES = {
-  'pending': 'Pendiente',
-  'confirmed': 'Confirmado',
-  'in_progress': 'En Progreso',
-  'completed': 'Completado',
-  'cancelled': 'Cancelado'
+  es: {
+    'pending': 'Pendiente',
+    'confirmed': 'Confirmado',
+    'in_progress': 'En Progreso',
+    'completed': 'Completado',
+    'cancelled': 'Cancelado'
+  },
+  en: {
+    'pending': 'Pending',
+    'confirmed': 'Confirmed',
+    'in_progress': 'In Progress',
+    'completed': 'Completed',
+    'cancelled': 'Cancelled'
+  },
+  pl: {
+    'pending': 'Oczekujące',
+    'confirmed': 'Potwierdzone',
+    'in_progress': 'W Trakcie',
+    'completed': 'Zakończone',
+    'cancelled': 'Anulowane'
+  },
+  cs: {
+    'pending': 'Čeká',
+    'confirmed': 'Potvrzeno',
+    'in_progress': 'Probíhá',
+    'completed': 'Dokončeno',
+    'cancelled': 'Zrušeno'
+  },
+  sk: {
+    'pending': 'Čaká',
+    'confirmed': 'Potvrdené',
+    'in_progress': 'Prebieha',
+    'completed': 'Dokončené',
+    'cancelled': 'Zrušené'
+  }
 };
 
-// Base email template
-function getEmailTemplate(title, content, footerText = '') {
+// Multi-language email texts
+const EMAIL_TEXTS = {
+  es: {
+    welcome: {
+      subject: '¡Bienvenido/a a Drone Service!',
+      title: '¡Bienvenido/a a Drone Service!',
+      greeting: 'Hola',
+      welcomeMsg: '¡Tu cuenta ha sido creada exitosamente!',
+      servicesIntro: 'Ahora puedes acceder a todos nuestros servicios profesionales de drones:',
+      fumigationDesc: 'Aplicación precisa de productos fitosanitarios',
+      mappingDesc: 'Cartografía aérea de alta resolución',
+      paintingDesc: 'Recubrimientos en estructuras de difícil acceso',
+      rentalDesc: 'Equipos profesionales para tus proyectos',
+      howTo: 'Para solicitar un servicio, simplemente inicia sesión en nuestra plataforma y haz clic en "Solicitar Servicio".',
+      button: 'Ir a la Plataforma',
+      questions: 'Si tienes alguna pregunta, no dudes en contactarnos.',
+      footer: 'Gracias por unirte a nuestra plataforma.'
+    },
+    serviceRequest: {
+      subject: 'Solicitud de Servicio Recibida',
+      title: 'Solicitud de Servicio Recibida',
+      greeting: 'Hola',
+      received: 'Hemos recibido tu solicitud de servicio. A continuación los detalles:',
+      service: 'Servicio',
+      scheduledDate: 'Fecha programada',
+      time: 'Hora',
+      location: 'Ubicación',
+      area: 'Área',
+      hectares: 'hectáreas',
+      status: 'Estado',
+      pending: 'Pendiente de confirmación',
+      willContact: 'Nuestro equipo revisará tu solicitud y te contactaremos pronto para confirmar los detalles.',
+      questions: 'Si tienes alguna pregunta, puedes responder a este email o contactarnos directamente.',
+      footer: 'Te notificaremos cuando tu solicitud sea confirmada.'
+    },
+    statusChange: {
+      subject: 'Actualización de tu Solicitud',
+      title: 'Actualización de tu Solicitud',
+      greeting: 'Hola',
+      updated: 'El estado de tu solicitud de servicio ha sido actualizado:',
+      service: 'Servicio',
+      date: 'Fecha',
+      location: 'Ubicación',
+      questions: 'Si tienes alguna pregunta, puedes responder a este email o contactarnos directamente.',
+      messages: {
+        confirmed: '¡Tu solicitud ha sido confirmada! Nuestro equipo estará en la ubicación indicada en la fecha programada.',
+        in_progress: 'Nuestro equipo está trabajando en tu servicio. Te mantendremos informado del progreso.',
+        completed: '¡El servicio ha sido completado exitosamente! Gracias por confiar en Drone Service.',
+        cancelled: 'Tu solicitud ha sido cancelada. Si tienes preguntas, no dudes en contactarnos.'
+      }
+    },
+    footer: {
+      autoEmail: 'Este email fue enviado automáticamente por Drone Service.',
+      rights: 'Todos los derechos reservados'
+    }
+  },
+  en: {
+    welcome: {
+      subject: 'Welcome to Drone Service!',
+      title: 'Welcome to Drone Service!',
+      greeting: 'Hello',
+      welcomeMsg: 'Your account has been created successfully!',
+      servicesIntro: 'Now you can access all our professional drone services:',
+      fumigationDesc: 'Precise application of phytosanitary products',
+      mappingDesc: 'High-resolution aerial cartography',
+      paintingDesc: 'Coatings on hard-to-reach structures',
+      rentalDesc: 'Professional equipment for your projects',
+      howTo: 'To request a service, simply log in to our platform and click on "Request Service".',
+      button: 'Go to Platform',
+      questions: 'If you have any questions, feel free to contact us.',
+      footer: 'Thank you for joining our platform.'
+    },
+    serviceRequest: {
+      subject: 'Service Request Received',
+      title: 'Service Request Received',
+      greeting: 'Hello',
+      received: 'We have received your service request. Here are the details:',
+      service: 'Service',
+      scheduledDate: 'Scheduled date',
+      time: 'Time',
+      location: 'Location',
+      area: 'Area',
+      hectares: 'hectares',
+      status: 'Status',
+      pending: 'Pending confirmation',
+      willContact: 'Our team will review your request and contact you soon to confirm the details.',
+      questions: 'If you have any questions, you can reply to this email or contact us directly.',
+      footer: 'We will notify you when your request is confirmed.'
+    },
+    statusChange: {
+      subject: 'Request Update',
+      title: 'Request Update',
+      greeting: 'Hello',
+      updated: 'The status of your service request has been updated:',
+      service: 'Service',
+      date: 'Date',
+      location: 'Location',
+      questions: 'If you have any questions, you can reply to this email or contact us directly.',
+      messages: {
+        confirmed: 'Your request has been confirmed! Our team will be at the indicated location on the scheduled date.',
+        in_progress: 'Our team is working on your service. We will keep you informed of the progress.',
+        completed: 'The service has been completed successfully! Thank you for trusting Drone Service.',
+        cancelled: 'Your request has been cancelled. If you have questions, feel free to contact us.'
+      }
+    },
+    footer: {
+      autoEmail: 'This email was sent automatically by Drone Service.',
+      rights: 'All rights reserved'
+    }
+  },
+  pl: {
+    welcome: {
+      subject: 'Witamy w Drone Service!',
+      title: 'Witamy w Drone Service!',
+      greeting: 'Witaj',
+      welcomeMsg: 'Twoje konto zostało pomyślnie utworzone!',
+      servicesIntro: 'Teraz masz dostęp do wszystkich naszych profesjonalnych usług dronowych:',
+      fumigationDesc: 'Precyzyjne stosowanie środków fitosanitarnych',
+      mappingDesc: 'Kartografia lotnicza wysokiej rozdzielczości',
+      paintingDesc: 'Powłoki na trudno dostępnych konstrukcjach',
+      rentalDesc: 'Profesjonalny sprzęt do Twoich projektów',
+      howTo: 'Aby zamówić usługę, po prostu zaloguj się na naszą platformę i kliknij "Zamów usługę".',
+      button: 'Przejdź do Platformy',
+      questions: 'Jeśli masz pytania, skontaktuj się z nami.',
+      footer: 'Dziękujemy za dołączenie do naszej platformy.'
+    },
+    serviceRequest: {
+      subject: 'Otrzymano Zamówienie Usługi',
+      title: 'Otrzymano Zamówienie Usługi',
+      greeting: 'Witaj',
+      received: 'Otrzymaliśmy Twoje zamówienie usługi. Oto szczegóły:',
+      service: 'Usługa',
+      scheduledDate: 'Zaplanowana data',
+      time: 'Godzina',
+      location: 'Lokalizacja',
+      area: 'Powierzchnia',
+      hectares: 'hektarów',
+      status: 'Status',
+      pending: 'Oczekuje na potwierdzenie',
+      willContact: 'Nasz zespół przejrzy Twoje zamówienie i wkrótce skontaktuje się z Tobą w celu potwierdzenia szczegółów.',
+      questions: 'Jeśli masz pytania, możesz odpowiedzieć na ten email lub skontaktować się z nami bezpośrednio.',
+      footer: 'Powiadomimy Cię, gdy Twoje zamówienie zostanie potwierdzone.'
+    },
+    statusChange: {
+      subject: 'Aktualizacja Zamówienia',
+      title: 'Aktualizacja Zamówienia',
+      greeting: 'Witaj',
+      updated: 'Status Twojego zamówienia usługi został zaktualizowany:',
+      service: 'Usługa',
+      date: 'Data',
+      location: 'Lokalizacja',
+      questions: 'Jeśli masz pytania, możesz odpowiedzieć na ten email lub skontaktować się z nami bezpośrednio.',
+      messages: {
+        confirmed: 'Twoje zamówienie zostało potwierdzone! Nasz zespół będzie na wskazanej lokalizacji w zaplanowanym terminie.',
+        in_progress: 'Nasz zespół pracuje nad Twoją usługą. Będziemy Cię informować o postępach.',
+        completed: 'Usługa została pomyślnie zakończona! Dziękujemy za zaufanie Drone Service.',
+        cancelled: 'Twoje zamówienie zostało anulowane. Jeśli masz pytania, skontaktuj się z nami.'
+      }
+    },
+    footer: {
+      autoEmail: 'Ten email został wysłany automatycznie przez Drone Service.',
+      rights: 'Wszelkie prawa zastrzeżone'
+    }
+  },
+  cs: {
+    welcome: {
+      subject: 'Vítejte v Drone Service!',
+      title: 'Vítejte v Drone Service!',
+      greeting: 'Ahoj',
+      welcomeMsg: 'Váš účet byl úspěšně vytvořen!',
+      servicesIntro: 'Nyní máte přístup ke všem našim profesionálním dronovým službám:',
+      fumigationDesc: 'Přesná aplikace fytosanitárních přípravků',
+      mappingDesc: 'Letecká kartografie ve vysokém rozlišení',
+      paintingDesc: 'Nátěry na těžko přístupných konstrukcích',
+      rentalDesc: 'Profesionální vybavení pro vaše projekty',
+      howTo: 'Pro objednání služby se jednoduše přihlaste na naši platformu a klikněte na "Objednat službu".',
+      button: 'Přejít na Platformu',
+      questions: 'Pokud máte dotazy, neváhejte nás kontaktovat.',
+      footer: 'Děkujeme za připojení k naší platformě.'
+    },
+    serviceRequest: {
+      subject: 'Objednávka Služby Přijata',
+      title: 'Objednávka Služby Přijata',
+      greeting: 'Ahoj',
+      received: 'Přijali jsme vaši objednávku služby. Zde jsou podrobnosti:',
+      service: 'Služba',
+      scheduledDate: 'Naplánované datum',
+      time: 'Čas',
+      location: 'Místo',
+      area: 'Plocha',
+      hectares: 'hektarů',
+      status: 'Stav',
+      pending: 'Čeká na potvrzení',
+      willContact: 'Náš tým zkontroluje vaši objednávku a brzy vás kontaktuje pro potvrzení detailů.',
+      questions: 'Pokud máte dotazy, můžete odpovědět na tento email nebo nás kontaktovat přímo.',
+      footer: 'Budeme vás informovat, až bude vaše objednávka potvrzena.'
+    },
+    statusChange: {
+      subject: 'Aktualizace Objednávky',
+      title: 'Aktualizace Objednávky',
+      greeting: 'Ahoj',
+      updated: 'Stav vaší objednávky služby byl aktualizován:',
+      service: 'Služba',
+      date: 'Datum',
+      location: 'Místo',
+      questions: 'Pokud máte dotazy, můžete odpovědět na tento email nebo nás kontaktovat přímo.',
+      messages: {
+        confirmed: 'Vaše objednávka byla potvrzena! Náš tým bude na uvedeném místě v naplánovaném termínu.',
+        in_progress: 'Náš tým pracuje na vaší službě. Budeme vás informovat o průběhu.',
+        completed: 'Služba byla úspěšně dokončena! Děkujeme za důvěru v Drone Service.',
+        cancelled: 'Vaše objednávka byla zrušena. Pokud máte dotazy, neváhejte nás kontaktovat.'
+      }
+    },
+    footer: {
+      autoEmail: 'Tento email byl automaticky odeslán Drone Service.',
+      rights: 'Všechna práva vyhrazena'
+    }
+  },
+  sk: {
+    welcome: {
+      subject: 'Vitajte v Drone Service!',
+      title: 'Vitajte v Drone Service!',
+      greeting: 'Ahoj',
+      welcomeMsg: 'Váš účet bol úspešne vytvorený!',
+      servicesIntro: 'Teraz máte prístup ku všetkým našim profesionálnym dronovým službám:',
+      fumigationDesc: 'Presná aplikácia fytosanitárnych prípravkov',
+      mappingDesc: 'Letecká kartografia vo vysokom rozlíšení',
+      paintingDesc: 'Nátery na ťažko prístupných konštrukciách',
+      rentalDesc: 'Profesionálne vybavenie pre vaše projekty',
+      howTo: 'Pre objednanie služby sa jednoducho prihláste na našu platformu a kliknite na "Objednať službu".',
+      button: 'Prejsť na Platformu',
+      questions: 'Ak máte otázky, neváhajte nás kontaktovať.',
+      footer: 'Ďakujeme za pripojenie k našej platforme.'
+    },
+    serviceRequest: {
+      subject: 'Objednávka Služby Prijatá',
+      title: 'Objednávka Služby Prijatá',
+      greeting: 'Ahoj',
+      received: 'Prijali sme vašu objednávku služby. Tu sú podrobnosti:',
+      service: 'Služba',
+      scheduledDate: 'Naplánovaný dátum',
+      time: 'Čas',
+      location: 'Miesto',
+      area: 'Plocha',
+      hectares: 'hektárov',
+      status: 'Stav',
+      pending: 'Čaká na potvrdenie',
+      willContact: 'Náš tím skontroluje vašu objednávku a čoskoro vás kontaktuje pre potvrdenie detailov.',
+      questions: 'Ak máte otázky, môžete odpovedať na tento email alebo nás kontaktovať priamo.',
+      footer: 'Budeme vás informovať, keď bude vaša objednávka potvrdená.'
+    },
+    statusChange: {
+      subject: 'Aktualizácia Objednávky',
+      title: 'Aktualizácia Objednávky',
+      greeting: 'Ahoj',
+      updated: 'Stav vašej objednávky služby bol aktualizovaný:',
+      service: 'Služba',
+      date: 'Dátum',
+      location: 'Miesto',
+      questions: 'Ak máte otázky, môžete odpovedať na tento email alebo nás kontaktovať priamo.',
+      messages: {
+        confirmed: 'Vaša objednávka bola potvrdená! Náš tím bude na uvedenom mieste v naplánovanom termíne.',
+        in_progress: 'Náš tím pracuje na vašej službe. Budeme vás informovať o priebehu.',
+        completed: 'Služba bola úspešne dokončená! Ďakujeme za dôveru v Drone Service.',
+        cancelled: 'Vaša objednávka bola zrušená. Ak máte otázky, neváhajte nás kontaktovať.'
+      }
+    },
+    footer: {
+      autoEmail: 'Tento email bol automaticky odoslaný Drone Service.',
+      rights: 'Všetky práva vyhradené'
+    }
+  }
+};
+
+// Get language helper
+function getLang(lang) {
+  return EMAIL_TEXTS[lang] || EMAIL_TEXTS['es'];
+}
+
+function getServiceName(service, lang) {
+  const names = SERVICE_NAMES[lang] || SERVICE_NAMES['es'];
+  return names[service] || service;
+}
+
+function getStatusName(status, lang) {
+  const names = STATUS_NAMES[lang] || STATUS_NAMES['es'];
+  return names[status] || status;
+}
+
+// Base email template - Light theme
+function getEmailTemplate(title, content, lang = 'es', footerText = '') {
+  const texts = getLang(lang);
   return `
 <!DOCTYPE html>
 <html>
@@ -112,41 +461,41 @@ function getEmailTemplate(title, content, footerText = '') {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; background-color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0f172a; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.2); overflow: hidden;">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 30px; text-align: center;">
               <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">🚁 Drone Service</h1>
-              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Servicios Profesionales de Drones</p>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Professional Drone Services</p>
             </td>
           </tr>
 
           <!-- Title -->
           <tr>
-            <td style="padding: 30px 30px 10px;">
-              <h2 style="margin: 0; color: #10b981; font-size: 22px; font-weight: 600;">${title}</h2>
+            <td style="padding: 30px 30px 10px; background-color: #ffffff;">
+              <h2 style="margin: 0; color: #059669; font-size: 22px; font-weight: 600;">${title}</h2>
             </td>
           </tr>
 
           <!-- Content -->
           <tr>
-            <td style="padding: 10px 30px 30px;">
+            <td style="padding: 10px 30px 30px; background-color: #ffffff;">
               ${content}
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: rgba(16, 185, 129, 0.1); padding: 20px 30px; border-top: 1px solid rgba(16, 185, 129, 0.2);">
-              <p style="margin: 0; color: rgba(255,255,255,0.6); font-size: 12px; text-align: center;">
-                ${footerText || 'Este email fue enviado automáticamente por Drone Service.'}
+            <td style="background-color: #f9fafb; padding: 20px 30px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #6b7280; font-size: 12px; text-align: center;">
+                ${footerText || texts.footer.autoEmail}
               </p>
-              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.4); font-size: 11px; text-align: center;">
-                © ${new Date().getFullYear()} Drone Service - Todos los derechos reservados
+              <p style="margin: 10px 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                © ${new Date().getFullYear()} Drone Service - ${texts.footer.rights}
               </p>
             </td>
           </tr>
@@ -160,147 +509,152 @@ function getEmailTemplate(title, content, footerText = '') {
 }
 
 // Welcome email for new users
-function getWelcomeEmailTemplate(userName) {
+function getWelcomeEmailTemplate(userName, lang = 'es') {
+  const texts = getLang(lang).welcome;
+  const serviceNames = SERVICE_NAMES[lang] || SERVICE_NAMES['es'];
+
   const content = `
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      Hola <strong style="color: white;">${userName || 'Usuario'}</strong>,
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.greeting} <strong style="color: #111827;">${userName || 'Usuario'}</strong>,
     </p>
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      ¡Bienvenido/a a <strong style="color: #10b981;">Drone Service</strong>! Tu cuenta ha sido creada exitosamente.
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.welcomeMsg}
     </p>
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      Ahora puedes acceder a todos nuestros servicios profesionales de drones:
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.servicesIntro}
     </p>
-    <ul style="color: rgba(255,255,255,0.8); font-size: 15px; line-height: 1.8; margin: 0 0 20px; padding-left: 20px;">
-      <li>🌾 <strong>Fumigación Agrícola</strong> - Aplicación precisa de productos fitosanitarios</li>
-      <li>📍 <strong>Mapeo y Análisis</strong> - Cartografía aérea de alta resolución</li>
-      <li>🎨 <strong>Pintura Industrial</strong> - Recubrimientos en estructuras de difícil acceso</li>
-      <li>🚁 <strong>Alquiler de Drones</strong> - Equipos profesionales para tus proyectos</li>
+    <ul style="color: #374151; font-size: 15px; line-height: 1.8; margin: 0 0 20px; padding-left: 20px;">
+      <li>🌾 <strong>${serviceNames['fumigation']}</strong> - ${texts.fumigationDesc}</li>
+      <li>📍 <strong>${serviceNames['mapping']}</strong> - ${texts.mappingDesc}</li>
+      <li>🎨 <strong>${serviceNames['painting']}</strong> - ${texts.paintingDesc}</li>
+      <li>🚁 <strong>${serviceNames['rental']}</strong> - ${texts.rentalDesc}</li>
     </ul>
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      Para solicitar un servicio, simplemente inicia sesión en nuestra plataforma y haz clic en "Solicitar Servicio".
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.howTo}
     </p>
     <div style="text-align: center; margin: 30px 0;">
       <a href="https://cieniowanie.droneagri.pl" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 14px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
-        Ir a la Plataforma
+        ${texts.button}
       </a>
     </div>
-    <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6; margin: 0;">
-      Si tienes alguna pregunta, no dudes en contactarnos.
+    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0;">
+      ${texts.questions}
     </p>
   `;
-  return getEmailTemplate('¡Bienvenido/a a Drone Service!', content, 'Gracias por unirte a nuestra plataforma.');
+  return getEmailTemplate(texts.title, content, lang, texts.footer);
 }
 
 // Admin notification for new registration
 function getAdminNewUserEmailTemplate(userEmail, userName) {
   const content = `
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
       Se ha registrado un nuevo usuario en la plataforma:
     </p>
-    <div style="background-color: rgba(16, 185, 129, 0.1); border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #10b981;">
-      <p style="margin: 0 0 10px; color: rgba(255,255,255,0.6); font-size: 14px;">Nombre:</p>
-      <p style="margin: 0 0 15px; color: white; font-size: 18px; font-weight: bold;">${userName || 'No especificado'}</p>
-      <p style="margin: 0 0 10px; color: rgba(255,255,255,0.6); font-size: 14px;">Email:</p>
-      <p style="margin: 0; color: #10b981; font-size: 18px; font-weight: bold;">${userEmail}</p>
+    <div style="background-color: #ecfdf5; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #10b981;">
+      <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">Nombre:</p>
+      <p style="margin: 0 0 15px; color: #111827; font-size: 18px; font-weight: bold;">${userName || 'No especificado'}</p>
+      <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">Email:</p>
+      <p style="margin: 0; color: #059669; font-size: 18px; font-weight: bold;">${userEmail}</p>
     </div>
-    <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6; margin: 20px 0 0;">
+    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 20px 0 0;">
       Fecha de registro: ${new Date().toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' })}
     </p>
   `;
-  return getEmailTemplate('🆕 Nuevo Usuario Registrado', content);
+  return getEmailTemplate('🆕 Nuevo Usuario Registrado', content, 'es');
 }
 
 // Client notification for service request created
-function getClientServiceRequestEmailTemplate(request) {
-  const serviceName = SERVICE_NAMES[request.service] || request.service;
+function getClientServiceRequestEmailTemplate(request, lang = 'es') {
+  const texts = getLang(lang).serviceRequest;
+  const serviceName = getServiceName(request.service, lang);
+
   const content = `
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      Hola <strong style="color: white;">${request.name}</strong>,
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.greeting} <strong style="color: #111827;">${request.name}</strong>,
     </p>
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      Hemos recibido tu solicitud de servicio. A continuación los detalles:
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.received}
     </p>
-    <div style="background-color: rgba(16, 185, 129, 0.1); border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #10b981;">
+    <div style="background-color: #ecfdf5; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #10b981;">
       <table width="100%" cellpadding="5" cellspacing="0">
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Servicio:</td>
-          <td style="color: #10b981; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${serviceName}</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.service}:</td>
+          <td style="color: #059669; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${serviceName}</td>
         </tr>
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Fecha programada:</td>
-          <td style="color: white; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${request.scheduledDate}</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.scheduledDate}:</td>
+          <td style="color: #111827; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${request.scheduledDate}</td>
         </tr>
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Hora:</td>
-          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.scheduledTime}</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.time}:</td>
+          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.scheduledTime}</td>
         </tr>
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Ubicación:</td>
-          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.location}</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.location}:</td>
+          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.location}</td>
         </tr>
         ${request.area ? `
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Área:</td>
-          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.area} hectáreas</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.area}:</td>
+          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.area} ${texts.hectares}</td>
         </tr>
         ` : ''}
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px;">Estado:</td>
-          <td style="color: #fbbf24; font-size: 16px; font-weight: bold;">⏳ Pendiente de confirmación</td>
+          <td style="color: #6b7280; font-size: 14px;">${texts.status}:</td>
+          <td style="color: #d97706; font-size: 16px; font-weight: bold;">⏳ ${texts.pending}</td>
         </tr>
       </table>
     </div>
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      Nuestro equipo revisará tu solicitud y te contactaremos pronto para confirmar los detalles.
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.willContact}
     </p>
-    <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6; margin: 0;">
-      Si tienes alguna pregunta, puedes responder a este email o contactarnos directamente.
+    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0;">
+      ${texts.questions}
     </p>
   `;
-  return getEmailTemplate('📋 Solicitud de Servicio Recibida', content, 'Te notificaremos cuando tu solicitud sea confirmada.');
+  return getEmailTemplate(texts.title, content, lang, texts.footer);
 }
 
 // Admin notification for new service request
 function getAdminServiceRequestEmailTemplate(request) {
-  const serviceName = SERVICE_NAMES[request.service] || request.service;
+  const serviceName = getServiceName(request.service, 'es');
   const content = `
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
       Se ha recibido una nueva solicitud de servicio:
     </p>
-    <div style="background-color: rgba(251, 191, 36, 0.1); border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #fbbf24;">
-      <h3 style="margin: 0 0 15px; color: #fbbf24; font-size: 20px;">${serviceName}</h3>
+    <div style="background-color: #fef3c7; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+      <h3 style="margin: 0 0 15px; color: #b45309; font-size: 20px;">${serviceName}</h3>
       <table width="100%" cellpadding="5" cellspacing="0">
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px; width: 120px;">Cliente:</td>
-          <td style="color: white; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${request.name}</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px; width: 120px;">Cliente:</td>
+          <td style="color: #111827; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${request.name}</td>
         </tr>
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Email:</td>
-          <td style="color: #10b981; font-size: 16px; padding-bottom: 10px;">${request.email}</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">Email:</td>
+          <td style="color: #059669; font-size: 16px; padding-bottom: 10px;">${request.email}</td>
         </tr>
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Teléfono:</td>
-          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.phone}</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">Teléfono:</td>
+          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.phone}</td>
         </tr>
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Fecha:</td>
-          <td style="color: white; font-size: 16px; font-weight: bold; padding-bottom: 10px;">📅 ${request.scheduledDate} a las ${request.scheduledTime}</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">Fecha:</td>
+          <td style="color: #111827; font-size: 16px; font-weight: bold; padding-bottom: 10px;">📅 ${request.scheduledDate} a las ${request.scheduledTime}</td>
         </tr>
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Ubicación:</td>
-          <td style="color: white; font-size: 16px; padding-bottom: 10px;">📍 ${request.location}</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">Ubicación:</td>
+          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">📍 ${request.location}</td>
         </tr>
         ${request.area ? `
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Área:</td>
-          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.area} hectáreas</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">Área:</td>
+          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.area} hectáreas</td>
         </tr>
         ` : ''}
         ${request.notes ? `
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; vertical-align: top;">Notas:</td>
-          <td style="color: rgba(255,255,255,0.8); font-size: 14px; font-style: italic;">${request.notes}</td>
+          <td style="color: #6b7280; font-size: 14px; vertical-align: top;">Notas:</td>
+          <td style="color: #374151; font-size: 14px; font-style: italic;">${request.notes}</td>
         </tr>
         ` : ''}
       </table>
@@ -311,58 +665,134 @@ function getAdminServiceRequestEmailTemplate(request) {
       </a>
     </div>
   `;
-  return getEmailTemplate('🆕 Nueva Solicitud de Servicio', content, 'Acción requerida: Revisar y confirmar solicitud.');
+  return getEmailTemplate('🆕 Nueva Solicitud de Servicio', content, 'es', 'Acción requerida: Revisar y confirmar solicitud.');
 }
 
 // Client notification for status change
-function getClientStatusChangeEmailTemplate(request, newStatus) {
-  const serviceName = SERVICE_NAMES[request.service] || request.service;
-  const statusName = STATUS_NAMES[newStatus] || newStatus;
+function getClientStatusChangeEmailTemplate(request, newStatus, lang = 'es') {
+  const texts = getLang(lang).statusChange;
+  const serviceName = getServiceName(request.service, lang);
+  const statusName = getStatusName(newStatus, lang);
 
   const statusConfig = {
-    'confirmed': { color: '#10b981', icon: '✅', message: '¡Tu solicitud ha sido confirmada! Nuestro equipo estará en la ubicación indicada en la fecha programada.' },
-    'in_progress': { color: '#3b82f6', icon: '🔄', message: 'Nuestro equipo está trabajando en tu servicio. Te mantendremos informado del progreso.' },
-    'completed': { color: '#10b981', icon: '🎉', message: '¡El servicio ha sido completado exitosamente! Gracias por confiar en Drone Service.' },
-    'cancelled': { color: '#ef4444', icon: '❌', message: 'Tu solicitud ha sido cancelada. Si tienes preguntas, no dudes en contactarnos.' }
+    'confirmed': { color: '#059669', bgColor: '#ecfdf5', icon: '✅' },
+    'in_progress': { color: '#2563eb', bgColor: '#eff6ff', icon: '🔄' },
+    'completed': { color: '#059669', bgColor: '#ecfdf5', icon: '🎉' },
+    'cancelled': { color: '#dc2626', bgColor: '#fef2f2', icon: '❌' }
   };
 
-  const config = statusConfig[newStatus] || { color: '#fbbf24', icon: '📋', message: 'El estado de tu solicitud ha sido actualizado.' };
+  const config = statusConfig[newStatus] || { color: '#d97706', bgColor: '#fef3c7', icon: '📋' };
+  const message = texts.messages[newStatus] || texts.updated;
 
   const content = `
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      Hola <strong style="color: white;">${request.name}</strong>,
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.greeting} <strong style="color: #111827;">${request.name}</strong>,
     </p>
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      El estado de tu solicitud de servicio ha sido actualizado:
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.updated}
     </p>
-    <div style="background-color: rgba(16, 185, 129, 0.1); border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+    <div style="background-color: ${config.bgColor}; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
       <p style="margin: 0 0 10px; font-size: 40px;">${config.icon}</p>
       <p style="margin: 0; color: ${config.color}; font-size: 24px; font-weight: bold;">${statusName}</p>
     </div>
-    <div style="background-color: rgba(255,255,255,0.05); border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0;">
       <table width="100%" cellpadding="5" cellspacing="0">
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Servicio:</td>
-          <td style="color: white; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${serviceName}</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.service}:</td>
+          <td style="color: #111827; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${serviceName}</td>
         </tr>
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Fecha:</td>
-          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.scheduled_date} a las ${request.scheduled_time}</td>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.date}:</td>
+          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.scheduled_date} - ${request.scheduled_time}</td>
         </tr>
         <tr>
-          <td style="color: rgba(255,255,255,0.6); font-size: 14px;">Ubicación:</td>
-          <td style="color: white; font-size: 16px;">${request.location}</td>
+          <td style="color: #6b7280; font-size: 14px;">${texts.location}:</td>
+          <td style="color: #111827; font-size: 16px;">${request.location}</td>
         </tr>
       </table>
     </div>
-    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      ${config.message}
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${message}
     </p>
-    <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6; margin: 0;">
-      Si tienes alguna pregunta, puedes responder a este email o contactarnos directamente.
+    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0;">
+      ${texts.questions}
     </p>
   `;
-  return getEmailTemplate(`${config.icon} Actualización de tu Solicitud`, content);
+  return getEmailTemplate(`${config.icon} ${texts.title}`, content, lang);
+}
+
+// Password reset email template
+function getPasswordResetEmailTemplate(resetUrl, lang = 'es') {
+  const texts = {
+    es: {
+      title: 'Recuperar Contraseña',
+      greeting: 'Hola',
+      message: 'Hemos recibido una solicitud para restablecer tu contraseña. Haz clic en el botón de abajo para crear una nueva contraseña:',
+      button: 'Restablecer Contraseña',
+      expires: 'Este enlace expirará en 1 hora.',
+      ignore: 'Si no solicitaste este cambio, puedes ignorar este email. Tu contraseña no será modificada.',
+      footer: 'Este enlace es de un solo uso.'
+    },
+    en: {
+      title: 'Reset Password',
+      greeting: 'Hello',
+      message: 'We received a request to reset your password. Click the button below to create a new password:',
+      button: 'Reset Password',
+      expires: 'This link will expire in 1 hour.',
+      ignore: 'If you did not request this change, you can ignore this email. Your password will not be changed.',
+      footer: 'This is a single-use link.'
+    },
+    pl: {
+      title: 'Zresetuj Hasło',
+      greeting: 'Witaj',
+      message: 'Otrzymaliśmy prośbę o zresetowanie hasła. Kliknij poniższy przycisk, aby utworzyć nowe hasło:',
+      button: 'Zresetuj Hasło',
+      expires: 'Ten link wygaśnie za 1 godzinę.',
+      ignore: 'Jeśli nie prosiłeś o tę zmianę, możesz zignorować ten email. Twoje hasło nie zostanie zmienione.',
+      footer: 'To jest jednorazowy link.'
+    },
+    cs: {
+      title: 'Obnovit Heslo',
+      greeting: 'Ahoj',
+      message: 'Obdrželi jsme žádost o obnovení vašeho hesla. Klikněte na tlačítko níže pro vytvoření nového hesla:',
+      button: 'Obnovit Heslo',
+      expires: 'Tento odkaz vyprší za 1 hodinu.',
+      ignore: 'Pokud jste o tuto změnu nežádali, můžete tento email ignorovat. Vaše heslo nebude změněno.',
+      footer: 'Toto je jednorázový odkaz.'
+    },
+    sk: {
+      title: 'Obnoviť Heslo',
+      greeting: 'Ahoj',
+      message: 'Dostali sme žiadosť o obnovenie vášho hesla. Kliknite na tlačidlo nižšie pre vytvorenie nového hesla:',
+      button: 'Obnoviť Heslo',
+      expires: 'Tento odkaz vyprší za 1 hodinu.',
+      ignore: 'Ak ste o túto zmenu nežiadali, môžete tento email ignorovať. Vaše heslo nebude zmenené.',
+      footer: 'Toto je jednorazový odkaz.'
+    }
+  };
+
+  const t = texts[lang] || texts['es'];
+
+  const content = `
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${t.greeting},
+    </p>
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${t.message}
+    </p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 14px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+        ${t.button}
+      </a>
+    </div>
+    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0 0 10px;">
+      ${t.expires}
+    </p>
+    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0;">
+      ${t.ignore}
+    </p>
+  `;
+  return getEmailTemplate(t.title, content, lang, t.footer);
 }
 
 // Send notification email (non-blocking)
@@ -563,6 +993,189 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
 // Logout (client-side, just return success)
 app.post('/api/auth/logout', (req, res) => {
   res.json({ success: true });
+});
+
+// Change own password
+app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Se requieren la contraseña actual y la nueva' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Get user with password
+    const [rows] = await pool.execute('SELECT password FROM users WHERE id = ?', [req.user.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Verify current password
+    const validPassword = await bcrypt.compare(currentPassword, rows[0].password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+    }
+
+    // Hash and update new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.user.id]);
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Error al cambiar la contraseña' });
+  }
+});
+
+// Forgot password - send reset email
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email requerido' });
+    }
+
+    // Find user
+    const [rows] = await pool.execute('SELECT id, email, language FROM users WHERE email = ?', [email.toLowerCase()]);
+
+    // Always return success to prevent email enumeration
+    if (rows.length === 0) {
+      return res.json({ success: true, message: 'Si el email existe, recibirás instrucciones para restablecer tu contraseña' });
+    }
+
+    const user = rows[0];
+    const lang = user.language || 'es';
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 3600000); // 1 hour
+
+    // Save token to database
+    await pool.execute(
+      'UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?',
+      [resetToken, resetExpires, user.id]
+    );
+
+    // Send reset email
+    const resetUrl = `https://cieniowanie.droneagri.pl/reset-password?token=${resetToken}`;
+
+    const subjectByLang = {
+      es: '🔐 Restablecer tu Contraseña - Drone Service',
+      en: '🔐 Reset Your Password - Drone Service',
+      pl: '🔐 Zresetuj Hasło - Drone Service',
+      cs: '🔐 Obnovit Heslo - Drone Service',
+      sk: '🔐 Obnoviť Heslo - Drone Service'
+    };
+
+    sendNotificationEmail(
+      user.email,
+      subjectByLang[lang] || subjectByLang['es'],
+      getPasswordResetEmailTemplate(resetUrl, lang)
+    );
+
+    res.json({ success: true, message: 'Si el email existe, recibirás instrucciones para restablecer tu contraseña' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Error al procesar la solicitud' });
+  }
+});
+
+// Reset password with token
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token y nueva contraseña son requeridos' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Find user with valid token
+    const [rows] = await pool.execute(
+      'SELECT id FROM users WHERE password_reset_token = ? AND password_reset_expires > NOW()',
+      [token]
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'Token inválido o expirado' });
+    }
+
+    const userId = rows[0].id;
+
+    // Hash and update password, clear reset token
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.execute(
+      'UPDATE users SET password = ?, password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?',
+      [hashedPassword, userId]
+    );
+
+    res.json({ success: true, message: 'Contraseña restablecida correctamente' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Error al restablecer la contraseña' });
+  }
+});
+
+// ==================== ADMIN USER MANAGEMENT ====================
+
+// Get all users (admin only)
+app.get('/api/admin/users', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const [rows] = await pool.execute(
+      'SELECT id, email, role, name, language, created_at FROM users ORDER BY created_at DESC'
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
+});
+
+// Admin change user password
+app.put('/api/admin/users/:id/password', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const { newPassword } = req.body;
+    const userId = req.params.id;
+
+    if (!newPassword) {
+      return res.status(400).json({ error: 'Nueva contraseña requerida' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Check if user exists
+    const [rows] = await pool.execute('SELECT id FROM users WHERE id = ?', [userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Hash and update password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error('Admin change password error:', error);
+    res.status(500).json({ error: 'Error al cambiar la contraseña' });
+  }
 });
 
 // ==================== CONFIG ENDPOINTS ====================

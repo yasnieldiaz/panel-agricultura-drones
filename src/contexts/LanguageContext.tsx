@@ -136,6 +136,26 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.privacyLink': 'Política de Privacidad',
     'auth.passwordMismatch': 'Las contraseñas no coinciden',
 
+    // Forgot Password
+    'forgotPassword.title': 'Recuperar Contraseña',
+    'forgotPassword.description': 'Ingresa tu email y te enviaremos instrucciones para restablecer tu contraseña.',
+    'forgotPassword.sendButton': 'Enviar Instrucciones',
+    'forgotPassword.sending': 'Enviando...',
+    'forgotPassword.success': 'Si el email existe, recibirás instrucciones para restablecer tu contraseña.',
+    'forgotPassword.error': 'Error al procesar la solicitud',
+    'forgotPassword.close': 'Cerrar',
+
+    // Reset Password
+    'resetPassword.title': 'Nueva Contraseña',
+    'resetPassword.newPassword': 'Nueva contraseña',
+    'resetPassword.confirmPassword': 'Confirmar contraseña',
+    'resetPassword.resetButton': 'Restablecer Contraseña',
+    'resetPassword.resetting': 'Restableciendo...',
+    'resetPassword.success': 'Tu contraseña ha sido restablecida correctamente.',
+    'resetPassword.goToLogin': 'Ir a Iniciar Sesión',
+    'resetPassword.error': 'Error al restablecer la contraseña',
+    'resetPassword.minLength': 'La contraseña debe tener al menos 6 caracteres',
+
     // Dashboard
     'dashboard.title': 'Panel de Cliente',
     'dashboard.welcome': 'Bienvenido',
@@ -262,6 +282,19 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.sendingSms': 'Enviando SMS...',
     'admin.notificationsSent': 'SMS y Email enviados',
     'admin.notificationsError': 'Error al enviar notificaciones',
+
+    // Password Management
+    'admin.passwordManagement': 'Gestión de Contraseñas',
+    'admin.changeOwnPassword': 'Cambiar Mi Contraseña',
+    'admin.userAccounts': 'Cuentas de Usuario',
+    'admin.currentPassword': 'Contraseña actual',
+    'admin.newPassword': 'Nueva contraseña',
+    'admin.confirmNewPassword': 'Confirmar nueva contraseña',
+    'admin.changePassword': 'Cambiar Contraseña',
+    'admin.passwordChanged': 'Contraseña cambiada correctamente',
+    'admin.userPasswordChanged': 'Contraseña del usuario cambiada correctamente',
+    'admin.passwordError': 'Error al cambiar la contraseña',
+    'admin.noUsers': 'No hay usuarios registrados',
 
     // Settings
     'settings.title': 'Configuración',
@@ -428,6 +461,26 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.privacyLink': 'Politykę Prywatności',
     'auth.passwordMismatch': 'Hasła nie pasują do siebie',
 
+    // Forgot Password
+    'forgotPassword.title': 'Odzyskaj Hasło',
+    'forgotPassword.description': 'Wpisz swój email, a wyślemy Ci instrukcje resetowania hasła.',
+    'forgotPassword.sendButton': 'Wyślij Instrukcje',
+    'forgotPassword.sending': 'Wysyłanie...',
+    'forgotPassword.success': 'Jeśli email istnieje, otrzymasz instrukcje resetowania hasła.',
+    'forgotPassword.error': 'Błąd podczas przetwarzania żądania',
+    'forgotPassword.close': 'Zamknij',
+
+    // Reset Password
+    'resetPassword.title': 'Nowe Hasło',
+    'resetPassword.newPassword': 'Nowe hasło',
+    'resetPassword.confirmPassword': 'Potwierdź hasło',
+    'resetPassword.resetButton': 'Zresetuj Hasło',
+    'resetPassword.resetting': 'Resetowanie...',
+    'resetPassword.success': 'Twoje hasło zostało pomyślnie zresetowane.',
+    'resetPassword.goToLogin': 'Przejdź do Logowania',
+    'resetPassword.error': 'Błąd podczas resetowania hasła',
+    'resetPassword.minLength': 'Hasło musi mieć co najmniej 6 znaków',
+
     // Dashboard
     'dashboard.title': 'Panel Klienta',
     'dashboard.welcome': 'Witaj',
@@ -554,6 +607,19 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.sendingSms': 'Wysyłanie SMS...',
     'admin.notificationsSent': 'SMS i Email wysłane',
     'admin.notificationsError': 'Błąd wysyłania powiadomień',
+
+    // Password Management
+    'admin.passwordManagement': 'Zarządzanie Hasłami',
+    'admin.changeOwnPassword': 'Zmień Moje Hasło',
+    'admin.userAccounts': 'Konta Użytkowników',
+    'admin.currentPassword': 'Aktualne hasło',
+    'admin.newPassword': 'Nowe hasło',
+    'admin.confirmNewPassword': 'Potwierdź nowe hasło',
+    'admin.changePassword': 'Zmień Hasło',
+    'admin.passwordChanged': 'Hasło zostało zmienione',
+    'admin.userPasswordChanged': 'Hasło użytkownika zostało zmienione',
+    'admin.passwordError': 'Błąd podczas zmiany hasła',
+    'admin.noUsers': 'Brak zarejestrowanych użytkowników',
 
     // Settings
     'settings.title': 'Ustawienia',
@@ -720,6 +786,26 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.privacyLink': 'Privacy Policy',
     'auth.passwordMismatch': 'Passwords do not match',
 
+    // Forgot Password
+    'forgotPassword.title': 'Reset Password',
+    'forgotPassword.description': 'Enter your email and we will send you instructions to reset your password.',
+    'forgotPassword.sendButton': 'Send Instructions',
+    'forgotPassword.sending': 'Sending...',
+    'forgotPassword.success': 'If the email exists, you will receive instructions to reset your password.',
+    'forgotPassword.error': 'Error processing request',
+    'forgotPassword.close': 'Close',
+
+    // Reset Password
+    'resetPassword.title': 'New Password',
+    'resetPassword.newPassword': 'New password',
+    'resetPassword.confirmPassword': 'Confirm password',
+    'resetPassword.resetButton': 'Reset Password',
+    'resetPassword.resetting': 'Resetting...',
+    'resetPassword.success': 'Your password has been successfully reset.',
+    'resetPassword.goToLogin': 'Go to Login',
+    'resetPassword.error': 'Error resetting password',
+    'resetPassword.minLength': 'Password must be at least 6 characters',
+
     // Dashboard
     'dashboard.title': 'Client Dashboard',
     'dashboard.welcome': 'Welcome',
@@ -846,6 +932,19 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.sendingSms': 'Sending SMS...',
     'admin.notificationsSent': 'SMS and Email sent',
     'admin.notificationsError': 'Error sending notifications',
+
+    // Password Management
+    'admin.passwordManagement': 'Password Management',
+    'admin.changeOwnPassword': 'Change My Password',
+    'admin.userAccounts': 'User Accounts',
+    'admin.currentPassword': 'Current password',
+    'admin.newPassword': 'New password',
+    'admin.confirmNewPassword': 'Confirm new password',
+    'admin.changePassword': 'Change Password',
+    'admin.passwordChanged': 'Password changed successfully',
+    'admin.userPasswordChanged': 'User password changed successfully',
+    'admin.passwordError': 'Error changing password',
+    'admin.noUsers': 'No registered users',
 
     // Settings
     'settings.title': 'Settings',
@@ -1012,6 +1111,26 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.privacyLink': 'Zásadami ochrany soukromí',
     'auth.passwordMismatch': 'Hesla se neshodují',
 
+    // Forgot Password
+    'forgotPassword.title': 'Obnovit Heslo',
+    'forgotPassword.description': 'Zadejte svůj email a pošleme vám instrukce k obnovení hesla.',
+    'forgotPassword.sendButton': 'Odeslat Instrukce',
+    'forgotPassword.sending': 'Odesílání...',
+    'forgotPassword.success': 'Pokud email existuje, obdržíte instrukce k obnovení hesla.',
+    'forgotPassword.error': 'Chyba při zpracování požadavku',
+    'forgotPassword.close': 'Zavřít',
+
+    // Reset Password
+    'resetPassword.title': 'Nové Heslo',
+    'resetPassword.newPassword': 'Nové heslo',
+    'resetPassword.confirmPassword': 'Potvrdit heslo',
+    'resetPassword.resetButton': 'Obnovit Heslo',
+    'resetPassword.resetting': 'Obnovování...',
+    'resetPassword.success': 'Vaše heslo bylo úspěšně obnoveno.',
+    'resetPassword.goToLogin': 'Přejít na Přihlášení',
+    'resetPassword.error': 'Chyba při obnovování hesla',
+    'resetPassword.minLength': 'Heslo musí mít alespoň 6 znaků',
+
     // Dashboard
     'dashboard.title': 'Panel klienta',
     'dashboard.welcome': 'Vítejte',
@@ -1138,6 +1257,19 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.sendingSms': 'Odesílání SMS...',
     'admin.notificationsSent': 'SMS a Email odeslány',
     'admin.notificationsError': 'Chyba při odesílání oznámení',
+
+    // Password Management
+    'admin.passwordManagement': 'Správa Hesel',
+    'admin.changeOwnPassword': 'Změnit Moje Heslo',
+    'admin.userAccounts': 'Uživatelské Účty',
+    'admin.currentPassword': 'Aktuální heslo',
+    'admin.newPassword': 'Nové heslo',
+    'admin.confirmNewPassword': 'Potvrdit nové heslo',
+    'admin.changePassword': 'Změnit Heslo',
+    'admin.passwordChanged': 'Heslo bylo úspěšně změněno',
+    'admin.userPasswordChanged': 'Heslo uživatele bylo změněno',
+    'admin.passwordError': 'Chyba při změně hesla',
+    'admin.noUsers': 'Žádní registrovaní uživatelé',
 
     // Settings
     'settings.title': 'Nastavení',
@@ -1304,6 +1436,26 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.privacyLink': 'Zásadami ochrany súkromia',
     'auth.passwordMismatch': 'Heslá sa nezhodujú',
 
+    // Forgot Password
+    'forgotPassword.title': 'Obnoviť Heslo',
+    'forgotPassword.description': 'Zadajte svoj email a pošleme vám inštrukcie na obnovenie hesla.',
+    'forgotPassword.sendButton': 'Odoslať Inštrukcie',
+    'forgotPassword.sending': 'Odosielanie...',
+    'forgotPassword.success': 'Ak email existuje, dostanete inštrukcie na obnovenie hesla.',
+    'forgotPassword.error': 'Chyba pri spracovaní požiadavky',
+    'forgotPassword.close': 'Zavrieť',
+
+    // Reset Password
+    'resetPassword.title': 'Nové Heslo',
+    'resetPassword.newPassword': 'Nové heslo',
+    'resetPassword.confirmPassword': 'Potvrdiť heslo',
+    'resetPassword.resetButton': 'Obnoviť Heslo',
+    'resetPassword.resetting': 'Obnovuje sa...',
+    'resetPassword.success': 'Vaše heslo bolo úspešne obnovené.',
+    'resetPassword.goToLogin': 'Prejsť na Prihlásenie',
+    'resetPassword.error': 'Chyba pri obnovovaní hesla',
+    'resetPassword.minLength': 'Heslo musí mať aspoň 6 znakov',
+
     // Dashboard
     'dashboard.title': 'Panel klienta',
     'dashboard.welcome': 'Vitajte',
@@ -1430,6 +1582,19 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.sendingSms': 'Odosielanie SMS...',
     'admin.notificationsSent': 'SMS a Email odoslané',
     'admin.notificationsError': 'Chyba pri odosielaní oznámení',
+
+    // Password Management
+    'admin.passwordManagement': 'Správa Hesiel',
+    'admin.changeOwnPassword': 'Zmeniť Moje Heslo',
+    'admin.userAccounts': 'Používateľské Účty',
+    'admin.currentPassword': 'Aktuálne heslo',
+    'admin.newPassword': 'Nové heslo',
+    'admin.confirmNewPassword': 'Potvrdiť nové heslo',
+    'admin.changePassword': 'Zmeniť Heslo',
+    'admin.passwordChanged': 'Heslo bolo úspešne zmenené',
+    'admin.userPasswordChanged': 'Heslo používateľa bolo zmenené',
+    'admin.passwordError': 'Chyba pri zmene hesla',
+    'admin.noUsers': 'Žiadni registrovaní používatelia',
 
     // Settings
     'settings.title': 'Nastavenia',
