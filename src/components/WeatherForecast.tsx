@@ -3,6 +3,7 @@ import { Cloud, Droplets, Wind, Thermometer, Sun, AlertTriangle, CheckCircle, Lo
 import { useLanguage } from '../contexts/LanguageContext'
 import {
   fetchWeatherForecast,
+  getClientLocation,
   getForecastForDate,
   getForecastsForDateRange,
   getWeatherIcon,
@@ -23,6 +24,7 @@ export default function WeatherForecast({ selectedDate, selectedEndDate, isRenta
   const [forecasts, setForecasts] = useState<WeatherForecastType[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [locationName, setLocationName] = useState<string>('')
 
   useEffect(() => {
     async function loadWeather() {
@@ -32,9 +34,14 @@ export default function WeatherForecast({ selectedDate, selectedEndDate, isRenta
       setError(null)
 
       try {
-        const response = await fetchWeatherForecast()
+        // Get client's location first
+        const location = await getClientLocation()
+
+        // Fetch weather for client's location
+        const response = await fetchWeatherForecast(location.lat, location.lon)
         if (response) {
           setForecasts(response.forecasts)
+          setLocationName(location.name || response.location.name || '')
         } else {
           setError('weather.errorLoading')
         }
@@ -98,9 +105,14 @@ export default function WeatherForecast({ selectedDate, selectedEndDate, isRenta
 
     return (
       <div className="glass rounded-xl p-4 mt-4 border border-purple-500/30">
-        <div className="flex items-center gap-2 mb-3">
-          <Sun className="w-5 h-5 text-purple-400" />
-          <h4 className="text-white font-medium">{t('weather.rentalForecast')}</h4>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Sun className="w-5 h-5 text-purple-400" />
+            <h4 className="text-white font-medium">{t('weather.rentalForecast')}</h4>
+          </div>
+          {locationName && (
+            <span className="text-white/50 text-xs">📍 {locationName}</span>
+          )}
         </div>
 
         {/* Overall summary */}
@@ -176,9 +188,14 @@ export default function WeatherForecast({ selectedDate, selectedEndDate, isRenta
 
   return (
     <div className="glass rounded-xl p-4 mt-4 border border-emerald-500/30">
-      <div className="flex items-center gap-2 mb-3">
-        <Sun className="w-5 h-5 text-emerald-400" />
-        <h4 className="text-white font-medium">{t('weather.forecast')}</h4>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Sun className="w-5 h-5 text-emerald-400" />
+          <h4 className="text-white font-medium">{t('weather.forecast')}</h4>
+        </div>
+        {locationName && (
+          <span className="text-white/50 text-xs">📍 {locationName}</span>
+        )}
       </div>
 
       <div className="flex items-center gap-4">

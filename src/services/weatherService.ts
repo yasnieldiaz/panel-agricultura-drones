@@ -3,10 +3,87 @@
 const METEOBLUE_API_KEY = '48wiNfGE9LqTSUlt'
 const METEOBLUE_BASE_URL = 'https://my.meteoblue.com/packages'
 
-// Default location: Rybnik, Poland (company headquarters)
+// Default location: Rybnik, Poland (fallback only)
 const DEFAULT_LOCATION = {
   lat: 50.0975,
   lon: 18.5415
+}
+
+// Cache for client location to avoid repeated API calls
+let cachedLocation: { lat: number; lon: number; name?: string } | null = null
+
+// Get client location from IP (using free ipapi.co service)
+async function getLocationFromIP(): Promise<{ lat: number; lon: number; name: string } | null> {
+  try {
+    const response = await fetch('https://ipapi.co/json/')
+    if (!response.ok) return null
+
+    const data = await response.json()
+    if (data.latitude && data.longitude) {
+      return {
+        lat: data.latitude,
+        lon: data.longitude,
+        name: data.city ? `${data.city}, ${data.country_name}` : data.country_name || 'Unknown'
+      }
+    }
+    return null
+  } catch (error) {
+    console.error('Error getting location from IP:', error)
+    return null
+  }
+}
+
+// Get client location using browser Geolocation API
+function getLocationFromBrowser(): Promise<{ lat: number; lon: number } | null> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude
+        })
+      },
+      () => {
+        // User denied or error - silently fail and use IP fallback
+        resolve(null)
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 300000 // Cache for 5 minutes
+      }
+    )
+  })
+}
+
+// Get client location (tries browser first, then IP, then default)
+export async function getClientLocation(): Promise<{ lat: number; lon: number; name?: string }> {
+  // Return cached location if available
+  if (cachedLocation) {
+    return cachedLocation
+  }
+
+  // Try browser geolocation first (more accurate)
+  const browserLocation = await getLocationFromBrowser()
+  if (browserLocation) {
+    cachedLocation = browserLocation
+    return browserLocation
+  }
+
+  // Fallback to IP geolocation
+  const ipLocation = await getLocationFromIP()
+  if (ipLocation) {
+    cachedLocation = ipLocation
+    return ipLocation
+  }
+
+  // Last resort: use default location
+  return DEFAULT_LOCATION
 }
 
 export interface WeatherForecast {
