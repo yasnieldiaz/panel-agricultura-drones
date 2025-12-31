@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   isAdmin: boolean
+  token: string | null
   signUp: (email: string, password: string, metadata?: { name?: string; phone?: string }) => Promise<{ error: Error | null }>
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('auth_token'))
 
   useEffect(() => {
     // Check for existing session on mount
@@ -23,8 +25,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const currentUser = await api.getCurrentUser()
         setUser(currentUser)
+        setToken(localStorage.getItem('auth_token'))
       } catch {
         setUser(null)
+        setToken(null)
       } finally {
         setLoading(false)
       }
@@ -37,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { user: newUser } = await api.register(email, password, { name: metadata?.name })
       setUser(newUser)
+      setToken(localStorage.getItem('auth_token'))
       return { error: null }
     } catch (error) {
       return { error: error as Error }
@@ -47,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { user: loggedUser } = await api.login(email, password)
       setUser(loggedUser)
+      setToken(localStorage.getItem('auth_token'))
       return { error: null }
     } catch (error) {
       return { error: error as Error }
@@ -56,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await api.logout()
     setUser(null)
+    setToken(null)
   }
 
   const isAdmin = useMemo(() => {
@@ -63,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user?.email])
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, token, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

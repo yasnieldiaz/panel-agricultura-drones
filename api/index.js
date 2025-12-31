@@ -855,6 +855,29 @@ app.put('/api/admin/service-requests/:id/status', authenticateToken, async (req,
   }
 });
 
+// Delete service request (admin only)
+app.delete('/api/admin/service-requests/:id', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const [result] = await pool.execute(
+      'DELETE FROM service_requests WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Solicitud no encontrada' });
+    }
+
+    res.json({ success: true, message: 'Solicitud eliminada' });
+  } catch (error) {
+    console.error('Delete service request error:', error);
+    res.status(500).json({ error: 'Error al eliminar solicitud' });
+  }
+});
+
 // ==================== SMS SEND ====================
 
 // Send SMS (admin only or for testing)

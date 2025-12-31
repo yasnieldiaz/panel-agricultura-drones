@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   LogOut,
   Calendar as CalendarIcon,
@@ -16,155 +16,157 @@ import {
   Check,
   X,
   Shield,
-  MessageSquare,
   Settings,
-  Plus
+  Plus,
+  Trash2,
+  Play,
+  XCircle,
+  RefreshCw
 } from 'lucide-react'
-import { useLanguage, type Language } from '../contexts/LanguageContext'
+import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../hooks/useAuth'
 import LanguageSelector from '../components/LanguageSelector'
 import ServiceRequestModal from '../components/ServiceRequestModal'
-import { sendConfirmationNotifications, sendCompletionNotifications } from '../services/smsService'
 import Logo from '../components/Logo'
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://cieniowanie.droneagri.pl/api'
 
 // Types
 interface ServiceRequest {
-  id: string
+  id: number
+  user_id: number
   service: string
-  serviceKey: string
-  date: string
-  time: string
+  scheduled_date: string
+  scheduled_time: string
+  name: string
+  email: string
+  phone: string
   location: string
-  area: number
-  status: 'pending' | 'scheduled' | 'inProgress' | 'completed'
-  client: {
-    name: string
-    email: string
-    phone: string
-  }
-  notes?: string
-  createdAt: string
+  area: number | null
+  notes: string | null
+  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
+  created_at: string
+  updated_at: string
 }
 
-// Mock data - In production this would come from Supabase
-const mockRequests: ServiceRequest[] = [
-  {
-    id: '1',
-    service: 'Fumigación con Drones',
-    serviceKey: 'service.fumigation.title',
-    date: '2024-12-15',
-    time: '09:00',
-    location: 'Finca El Olivo, Almería',
-    area: 25,
-    status: 'completed',
-    client: {
-      name: 'Juan García',
-      email: 'juan@email.com',
-      phone: '+34 600 111 222'
-    },
-    createdAt: '2024-12-01'
-  },
-  {
-    id: '2',
-    service: 'Mapeo Aéreo',
-    serviceKey: 'service.mapping.title',
-    date: '2024-12-20',
-    time: '10:00',
-    location: 'Campo Verde, Granada',
-    area: 40,
-    status: 'completed',
-    client: {
-      name: 'María López',
-      email: 'maria@email.com',
-      phone: '+34 600 333 444'
-    },
-    createdAt: '2024-12-05'
-  },
-  {
-    id: '3',
-    service: 'Pintura de Invernaderos',
-    serviceKey: 'service.painting.title',
-    date: '2025-01-10',
-    time: '08:00',
-    location: 'Invernaderos Sol, Murcia',
-    area: 15,
-    status: 'scheduled',
-    client: {
-      name: 'Pedro Martínez',
-      email: 'pedro@email.com',
-      phone: '+34 600 555 666'
-    },
-    notes: 'Preferiblemente por la mañana temprano',
-    createdAt: '2024-12-15'
-  },
-  {
-    id: '4',
-    service: 'Fumigación con Drones',
-    serviceKey: 'service.fumigation.title',
-    date: '2025-01-15',
-    time: '11:00',
-    location: 'Finca El Olivo, Almería',
-    area: 30,
-    status: 'pending',
-    client: {
-      name: 'Juan García',
-      email: 'juan@email.com',
-      phone: '+34 600 111 222'
-    },
-    createdAt: '2024-12-20'
-  },
-  {
-    id: '5',
-    service: 'Modelos de Elevación',
-    serviceKey: 'service.elevation.title',
-    date: '2025-01-25',
-    time: '14:00',
-    location: 'Terrenos Norte, Valencia',
-    area: 50,
-    status: 'pending',
-    client: {
-      name: 'Ana Fernández',
-      email: 'ana@email.com',
-      phone: '+34 600 777 888'
-    },
-    notes: 'Zona con desnivel, necesita modelo 3D detallado',
-    createdAt: '2024-12-22'
-  },
-  {
-    id: '6',
-    service: 'Fumigación con Drones',
-    serviceKey: 'service.fumigation.title',
-    date: '2025-01-05',
-    time: '10:00',
-    location: 'Finca Test, Warsaw',
-    area: 20,
-    status: 'pending',
-    client: {
-      name: 'Yasniel Díaz',
-      email: 'admin@drone-partss.com',
-      phone: '+48696350197'
-    },
-    notes: 'Solicitud de prueba para verificar SMS y Email',
-    createdAt: '2024-12-30'
-  }
-]
+// Service name mapping
+const SERVICE_KEYS: Record<string, string> = {
+  'fumigation': 'service.fumigation.title',
+  'mapping': 'service.mapping.title',
+  'painting': 'service.painting.title',
+  'rental': 'service.rental.title'
+}
 
-type TabType = 'all' | 'pending' | 'scheduled' | 'completed'
+type TabType = 'all' | 'pending' | 'confirmed' | 'in_progress' | 'completed'
 
 export default function AdminDashboard() {
-  const { t, language } = useLanguage()
-  const { signOut, loading } = useAuth()
+  const { t } = useLanguage()
+  const { signOut, loading: authLoading, token } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TabType>('all')
-  const [requests, setRequests] = useState(mockRequests)
-  const [_selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null)
-  const [sendingSMS, setSendingSMS] = useState<string | null>(null)
-  const [smsStatus, setSmsStatus] = useState<{ id: string; success: boolean; message: string } | null>(null)
+  const [requests, setRequests] = useState<ServiceRequest[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [updatingId, setUpdatingId] = useState<number | null>(null)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
   const [serviceModalOpen, setServiceModalOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null)
+
+  // Fetch service requests from API
+  const fetchRequests = async () => {
+    if (!token) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`${API_URL}/admin/service-requests`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al cargar solicitudes')
+      }
+
+      const data = await response.json()
+      setRequests(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchRequests()
+  }, [token])
 
   const handleLogout = async () => {
     await signOut()
     navigate('/')
+  }
+
+  // Update status via API
+  const updateStatus = async (id: number, newStatus: ServiceRequest['status']) => {
+    if (!token) return
+
+    setUpdatingId(id)
+
+    try {
+      const response = await fetch(`${API_URL}/admin/service-requests/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar estado')
+      }
+
+      // Update local state
+      setRequests(prev => prev.map(req =>
+        req.id === id ? { ...req, status: newStatus } : req
+      ))
+    } catch (err) {
+      console.error('Error updating status:', err)
+      alert(t('admin.statusError'))
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  // Delete request via API
+  const deleteRequest = async (id: number) => {
+    if (!token) return
+
+    setDeletingId(id)
+
+    try {
+      const response = await fetch(`${API_URL}/admin/service-requests/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar solicitud')
+      }
+
+      // Remove from local state
+      setRequests(prev => prev.filter(req => req.id !== id))
+      setConfirmDelete(null)
+    } catch (err) {
+      console.error('Error deleting request:', err)
+      alert(t('admin.deleteError'))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   // Filter requests by tab
@@ -173,84 +175,14 @@ export default function AdminDashboard() {
     return requests.filter(req => req.status === activeTab)
   }, [activeTab, requests])
 
-  // Mark request as completed and send SMS + Email
-  const markAsCompleted = async (id: string) => {
-    const request = requests.find(r => r.id === id)
-    if (!request) return
-
-    setSendingSMS(id)
-
-    // Update status first
-    setRequests(prev => prev.map(req =>
-      req.id === id ? { ...req, status: 'completed' as const } : req
-    ))
-
-    // Send completion notifications (SMS + Email)
-    const result = await sendCompletionNotifications({
-      phone: request.client.phone,
-      email: request.client.email,
-      clientName: request.client.name,
-      service: t(request.serviceKey),
-      language: language as Language
-    })
-
-    setSendingSMS(null)
-
-    if (result.sms.success || result.email.success) {
-      setSmsStatus({ id, success: true, message: t('admin.notificationsSent') })
-    } else {
-      setSmsStatus({ id, success: false, message: t('admin.notificationsError') })
-    }
-
-    // Clear status after 3 seconds
-    setTimeout(() => setSmsStatus(null), 3000)
-    setSelectedRequest(null)
-  }
-
-  // Mark request as scheduled (confirm) and send SMS + Email
-  const markAsScheduled = async (id: string) => {
-    const request = requests.find(r => r.id === id)
-    if (!request) return
-
-    setSendingSMS(id)
-
-    // Update status first
-    setRequests(prev => prev.map(req =>
-      req.id === id ? { ...req, status: 'scheduled' as const } : req
-    ))
-
-    // Send confirmation notifications (SMS + Email)
-    const result = await sendConfirmationNotifications({
-      phone: request.client.phone,
-      email: request.client.email,
-      clientName: request.client.name,
-      service: t(request.serviceKey),
-      date: new Date(request.date).toLocaleDateString(),
-      time: request.time,
-      location: request.location,
-      area: request.area,
-      language: language as Language
-    })
-
-    setSendingSMS(null)
-
-    if (result.sms.success || result.email.success) {
-      setSmsStatus({ id, success: true, message: t('admin.notificationsSent') })
-    } else {
-      setSmsStatus({ id, success: false, message: t('admin.notificationsError') })
-    }
-
-    // Clear status after 3 seconds
-    setTimeout(() => setSmsStatus(null), 3000)
-  }
-
   // Get status color
   const getStatusColor = (status: ServiceRequest['status']) => {
     switch (status) {
       case 'completed': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-      case 'scheduled': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+      case 'confirmed': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
       case 'pending': return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-      case 'inProgress': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+      case 'in_progress': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+      case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30'
       default: return 'bg-white/20 text-white/60 border-white/30'
     }
   }
@@ -258,14 +190,19 @@ export default function AdminDashboard() {
   const getStatusIcon = (status: ServiceRequest['status']) => {
     switch (status) {
       case 'completed': return <CheckCircle2 className="w-4 h-4" />
-      case 'scheduled': return <Clock className="w-4 h-4" />
+      case 'confirmed': return <Clock className="w-4 h-4" />
       case 'pending': return <Circle className="w-4 h-4" />
-      case 'inProgress': return <Loader2 className="w-4 h-4 animate-spin" />
+      case 'in_progress': return <Loader2 className="w-4 h-4 animate-spin" />
+      case 'cancelled': return <XCircle className="w-4 h-4" />
       default: return <Circle className="w-4 h-4" />
     }
   }
 
-  if (loading) {
+  const getServiceKey = (service: string) => {
+    return SERVICE_KEYS[service] || service
+  }
+
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
@@ -324,24 +261,44 @@ export default function AdminDashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-            {t('admin.title')}
-          </h1>
-          <p className="text-white/60">{t('admin.subtitle')}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+                {t('admin.title')}
+              </h1>
+              <p className="text-white/60">{t('admin.subtitle')}</p>
+            </div>
+            <button
+              onClick={fetchRequests}
+              className="btn-glass flex items-center gap-2"
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{t('admin.refresh')}</span>
+            </button>
+          </div>
         </motion.div>
+
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400">
+            {error}
+          </div>
+        )}
 
         {/* Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
         >
           {[
             { label: t('dashboard.pending'), value: requests.filter(r => r.status === 'pending').length, color: 'from-amber-500 to-orange-500' },
-            { label: t('dashboard.scheduled'), value: requests.filter(r => r.status === 'scheduled').length, color: 'from-blue-500 to-cyan-500' },
+            { label: t('dashboard.confirmed'), value: requests.filter(r => r.status === 'confirmed').length, color: 'from-blue-500 to-cyan-500' },
+            { label: t('dashboard.inProgress'), value: requests.filter(r => r.status === 'in_progress').length, color: 'from-purple-500 to-pink-500' },
             { label: t('dashboard.completed'), value: requests.filter(r => r.status === 'completed').length, color: 'from-emerald-500 to-teal-500' },
-            { label: t('dashboard.all'), value: requests.length, color: 'from-purple-500 to-pink-500' },
+            { label: t('dashboard.all'), value: requests.length, color: 'from-gray-500 to-gray-600' },
           ].map((stat, index) => (
             <div key={index} className="card-glass">
               <div className={`text-3xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
@@ -368,7 +325,7 @@ export default function AdminDashboard() {
 
             {/* Tabs */}
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-              {(['all', 'pending', 'scheduled', 'completed'] as TabType[]).map((tab) => (
+              {(['all', 'pending', 'confirmed', 'in_progress', 'completed'] as TabType[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -378,7 +335,7 @@ export default function AdminDashboard() {
                       : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  {t(`dashboard.${tab}`)}
+                  {t(`dashboard.${tab === 'in_progress' ? 'inProgress' : tab}`)}
                 </button>
               ))}
             </div>
@@ -398,10 +355,10 @@ export default function AdminDashboard() {
                     transition={{ delay: index * 0.05 }}
                     className="glass-dark rounded-xl p-4 hover:bg-white/10 transition-colors"
                   >
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-white">{t(request.serviceKey)}</h3>
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                          <h3 className="font-semibold text-white">{t(getServiceKey(request.service))}</h3>
                           <span className={`px-2 py-0.5 rounded-full text-xs border flex items-center gap-1 ${getStatusColor(request.status)}`}>
                             {getStatusIcon(request.status)}
                             {t(`dashboard.status.${request.status}`)}
@@ -411,19 +368,19 @@ export default function AdminDashboard() {
                         <div className="grid sm:grid-cols-2 gap-2 text-sm text-white/60 mb-3">
                           <div className="flex items-center gap-1.5">
                             <User className="w-4 h-4" />
-                            {request.client.name}
+                            {request.name}
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Mail className="w-4 h-4" />
-                            {request.client.email}
+                            {request.email}
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Phone className="w-4 h-4" />
-                            {request.client.phone}
+                            {request.phone}
                           </div>
                           <div className="flex items-center gap-1.5">
                             <CalendarIcon className="w-4 h-4" />
-                            {new Date(request.date).toLocaleDateString()} - {request.time}
+                            {new Date(request.scheduled_date).toLocaleDateString()} - {request.scheduled_time}
                           </div>
                         </div>
 
@@ -432,10 +389,12 @@ export default function AdminDashboard() {
                             <MapPin className="w-4 h-4" />
                             {request.location}
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-medium text-emerald-400">{request.area}</span>
-                            {t('dashboard.hectares')}
-                          </div>
+                          {request.area && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium text-emerald-400">{request.area}</span>
+                              {t('dashboard.hectares')}
+                            </div>
+                          )}
                         </div>
 
                         {request.notes && (
@@ -446,64 +405,101 @@ export default function AdminDashboard() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-2">
+                        {/* Status change buttons */}
+                        <div className="flex flex-wrap gap-2">
                           {request.status === 'pending' && (
                             <button
-                              onClick={() => markAsScheduled(request.id)}
-                              disabled={sendingSMS === request.id}
-                              className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
+                              onClick={() => updateStatus(request.id, 'confirmed')}
+                              disabled={updatingId === request.id}
+                              className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors text-xs flex items-center gap-1.5 disabled:opacity-50"
                             >
-                              {sendingSMS === request.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
+                              {updatingId === request.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
                               ) : (
-                                <>
-                                  <Clock className="w-4 h-4" />
-                                  <MessageSquare className="w-3 h-3" />
-                                </>
+                                <Check className="w-3 h-3" />
                               )}
                               {t('admin.confirm')}
                             </button>
                           )}
-                          {(request.status === 'pending' || request.status === 'scheduled') && (
+
+                          {request.status === 'confirmed' && (
                             <button
-                              onClick={() => markAsCompleted(request.id)}
-                              disabled={sendingSMS === request.id}
-                              className="px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
+                              onClick={() => updateStatus(request.id, 'in_progress')}
+                              disabled={updatingId === request.id}
+                              className="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors text-xs flex items-center gap-1.5 disabled:opacity-50"
                             >
-                              {sendingSMS === request.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
+                              {updatingId === request.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
                               ) : (
-                                <>
-                                  <Check className="w-4 h-4" />
-                                  <MessageSquare className="w-3 h-3" />
-                                </>
+                                <Play className="w-3 h-3" />
+                              )}
+                              {t('admin.startWork')}
+                            </button>
+                          )}
+
+                          {(request.status === 'confirmed' || request.status === 'in_progress') && (
+                            <button
+                              onClick={() => updateStatus(request.id, 'completed')}
+                              disabled={updatingId === request.id}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors text-xs flex items-center gap-1.5 disabled:opacity-50"
+                            >
+                              {updatingId === request.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="w-3 h-3" />
                               )}
                               {t('admin.complete')}
                             </button>
                           )}
-                        </div>
 
-                        {/* SMS Status */}
-                        <AnimatePresence>
-                          {smsStatus && smsStatus.id === request.id && (
-                            <motion.div
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0 }}
-                              className={`text-xs flex items-center gap-1 ${
-                                smsStatus.success ? 'text-emerald-400' : 'text-red-400'
-                              }`}
+                          {request.status !== 'cancelled' && request.status !== 'completed' && (
+                            <button
+                              onClick={() => updateStatus(request.id, 'cancelled')}
+                              disabled={updatingId === request.id}
+                              className="px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-colors text-xs flex items-center gap-1.5 disabled:opacity-50"
                             >
-                              {smsStatus.success ? (
-                                <CheckCircle2 className="w-3 h-3" />
+                              {updatingId === request.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
                               ) : (
                                 <X className="w-3 h-3" />
                               )}
-                              {smsStatus.message}
-                            </motion.div>
+                              {t('admin.cancel')}
+                            </button>
                           )}
-                        </AnimatePresence>
+
+                          {/* Delete button */}
+                          {confirmDelete === request.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => deleteRequest(request.id)}
+                                disabled={deletingId === request.id}
+                                className="px-3 py-1.5 rounded-lg bg-red-500/30 text-red-400 hover:bg-red-500/40 transition-colors text-xs flex items-center gap-1.5 disabled:opacity-50"
+                              >
+                                {deletingId === request.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Check className="w-3 h-3" />
+                                )}
+                                {t('admin.confirmDelete')}
+                              </button>
+                              <button
+                                onClick={() => setConfirmDelete(null)}
+                                className="px-3 py-1.5 rounded-lg bg-white/10 text-white/60 hover:bg-white/20 transition-colors text-xs"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDelete(request.id)}
+                              className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors text-xs flex items-center gap-1.5"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              {t('admin.delete')}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </motion.div>
