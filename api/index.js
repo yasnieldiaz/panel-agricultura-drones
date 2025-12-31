@@ -86,6 +86,305 @@ function getFromEmail() {
   return config.smtp?.fromEmail || 'noreply@droneservice.com';
 }
 
+// ==================== EMAIL TEMPLATES ====================
+
+const SERVICE_NAMES = {
+  'fumigation': 'Fumigación con Drones',
+  'mapping': 'Mapeo y Análisis Aéreo',
+  'painting': 'Pintura Industrial con Drones',
+  'rental': 'Alquiler de Drones'
+};
+
+const STATUS_NAMES = {
+  'pending': 'Pendiente',
+  'confirmed': 'Confirmado',
+  'in_progress': 'En Progreso',
+  'completed': 'Completado',
+  'cancelled': 'Cancelado'
+};
+
+// Base email template
+function getEmailTemplate(title, content, footerText = '') {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0f172a; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.2); overflow: hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">🚁 Drone Service</h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Servicios Profesionales de Drones</p>
+            </td>
+          </tr>
+
+          <!-- Title -->
+          <tr>
+            <td style="padding: 30px 30px 10px;">
+              <h2 style="margin: 0; color: #10b981; font-size: 22px; font-weight: 600;">${title}</h2>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 10px 30px 30px;">
+              ${content}
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: rgba(16, 185, 129, 0.1); padding: 20px 30px; border-top: 1px solid rgba(16, 185, 129, 0.2);">
+              <p style="margin: 0; color: rgba(255,255,255,0.6); font-size: 12px; text-align: center;">
+                ${footerText || 'Este email fue enviado automáticamente por Drone Service.'}
+              </p>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.4); font-size: 11px; text-align: center;">
+                © ${new Date().getFullYear()} Drone Service - Todos los derechos reservados
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+}
+
+// Welcome email for new users
+function getWelcomeEmailTemplate(userName) {
+  const content = `
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      Hola <strong style="color: white;">${userName || 'Usuario'}</strong>,
+    </p>
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ¡Bienvenido/a a <strong style="color: #10b981;">Drone Service</strong>! Tu cuenta ha sido creada exitosamente.
+    </p>
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      Ahora puedes acceder a todos nuestros servicios profesionales de drones:
+    </p>
+    <ul style="color: rgba(255,255,255,0.8); font-size: 15px; line-height: 1.8; margin: 0 0 20px; padding-left: 20px;">
+      <li>🌾 <strong>Fumigación Agrícola</strong> - Aplicación precisa de productos fitosanitarios</li>
+      <li>📍 <strong>Mapeo y Análisis</strong> - Cartografía aérea de alta resolución</li>
+      <li>🎨 <strong>Pintura Industrial</strong> - Recubrimientos en estructuras de difícil acceso</li>
+      <li>🚁 <strong>Alquiler de Drones</strong> - Equipos profesionales para tus proyectos</li>
+    </ul>
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      Para solicitar un servicio, simplemente inicia sesión en nuestra plataforma y haz clic en "Solicitar Servicio".
+    </p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="https://cieniowanie.droneagri.pl" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 14px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+        Ir a la Plataforma
+      </a>
+    </div>
+    <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6; margin: 0;">
+      Si tienes alguna pregunta, no dudes en contactarnos.
+    </p>
+  `;
+  return getEmailTemplate('¡Bienvenido/a a Drone Service!', content, 'Gracias por unirte a nuestra plataforma.');
+}
+
+// Admin notification for new registration
+function getAdminNewUserEmailTemplate(userEmail, userName) {
+  const content = `
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      Se ha registrado un nuevo usuario en la plataforma:
+    </p>
+    <div style="background-color: rgba(16, 185, 129, 0.1); border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #10b981;">
+      <p style="margin: 0 0 10px; color: rgba(255,255,255,0.6); font-size: 14px;">Nombre:</p>
+      <p style="margin: 0 0 15px; color: white; font-size: 18px; font-weight: bold;">${userName || 'No especificado'}</p>
+      <p style="margin: 0 0 10px; color: rgba(255,255,255,0.6); font-size: 14px;">Email:</p>
+      <p style="margin: 0; color: #10b981; font-size: 18px; font-weight: bold;">${userEmail}</p>
+    </div>
+    <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6; margin: 20px 0 0;">
+      Fecha de registro: ${new Date().toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' })}
+    </p>
+  `;
+  return getEmailTemplate('🆕 Nuevo Usuario Registrado', content);
+}
+
+// Client notification for service request created
+function getClientServiceRequestEmailTemplate(request) {
+  const serviceName = SERVICE_NAMES[request.service] || request.service;
+  const content = `
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      Hola <strong style="color: white;">${request.name}</strong>,
+    </p>
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      Hemos recibido tu solicitud de servicio. A continuación los detalles:
+    </p>
+    <div style="background-color: rgba(16, 185, 129, 0.1); border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #10b981;">
+      <table width="100%" cellpadding="5" cellspacing="0">
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Servicio:</td>
+          <td style="color: #10b981; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${serviceName}</td>
+        </tr>
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Fecha programada:</td>
+          <td style="color: white; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${request.scheduledDate}</td>
+        </tr>
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Hora:</td>
+          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.scheduledTime}</td>
+        </tr>
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Ubicación:</td>
+          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.location}</td>
+        </tr>
+        ${request.area ? `
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Área:</td>
+          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.area} hectáreas</td>
+        </tr>
+        ` : ''}
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px;">Estado:</td>
+          <td style="color: #fbbf24; font-size: 16px; font-weight: bold;">⏳ Pendiente de confirmación</td>
+        </tr>
+      </table>
+    </div>
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      Nuestro equipo revisará tu solicitud y te contactaremos pronto para confirmar los detalles.
+    </p>
+    <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6; margin: 0;">
+      Si tienes alguna pregunta, puedes responder a este email o contactarnos directamente.
+    </p>
+  `;
+  return getEmailTemplate('📋 Solicitud de Servicio Recibida', content, 'Te notificaremos cuando tu solicitud sea confirmada.');
+}
+
+// Admin notification for new service request
+function getAdminServiceRequestEmailTemplate(request) {
+  const serviceName = SERVICE_NAMES[request.service] || request.service;
+  const content = `
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      Se ha recibido una nueva solicitud de servicio:
+    </p>
+    <div style="background-color: rgba(251, 191, 36, 0.1); border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #fbbf24;">
+      <h3 style="margin: 0 0 15px; color: #fbbf24; font-size: 20px;">${serviceName}</h3>
+      <table width="100%" cellpadding="5" cellspacing="0">
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px; width: 120px;">Cliente:</td>
+          <td style="color: white; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${request.name}</td>
+        </tr>
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Email:</td>
+          <td style="color: #10b981; font-size: 16px; padding-bottom: 10px;">${request.email}</td>
+        </tr>
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Teléfono:</td>
+          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.phone}</td>
+        </tr>
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Fecha:</td>
+          <td style="color: white; font-size: 16px; font-weight: bold; padding-bottom: 10px;">📅 ${request.scheduledDate} a las ${request.scheduledTime}</td>
+        </tr>
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Ubicación:</td>
+          <td style="color: white; font-size: 16px; padding-bottom: 10px;">📍 ${request.location}</td>
+        </tr>
+        ${request.area ? `
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Área:</td>
+          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.area} hectáreas</td>
+        </tr>
+        ` : ''}
+        ${request.notes ? `
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; vertical-align: top;">Notas:</td>
+          <td style="color: rgba(255,255,255,0.8); font-size: 14px; font-style: italic;">${request.notes}</td>
+        </tr>
+        ` : ''}
+      </table>
+    </div>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="https://cieniowanie.droneagri.pl/admin" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 14px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+        Ver en Panel de Admin
+      </a>
+    </div>
+  `;
+  return getEmailTemplate('🆕 Nueva Solicitud de Servicio', content, 'Acción requerida: Revisar y confirmar solicitud.');
+}
+
+// Client notification for status change
+function getClientStatusChangeEmailTemplate(request, newStatus) {
+  const serviceName = SERVICE_NAMES[request.service] || request.service;
+  const statusName = STATUS_NAMES[newStatus] || newStatus;
+
+  const statusConfig = {
+    'confirmed': { color: '#10b981', icon: '✅', message: '¡Tu solicitud ha sido confirmada! Nuestro equipo estará en la ubicación indicada en la fecha programada.' },
+    'in_progress': { color: '#3b82f6', icon: '🔄', message: 'Nuestro equipo está trabajando en tu servicio. Te mantendremos informado del progreso.' },
+    'completed': { color: '#10b981', icon: '🎉', message: '¡El servicio ha sido completado exitosamente! Gracias por confiar en Drone Service.' },
+    'cancelled': { color: '#ef4444', icon: '❌', message: 'Tu solicitud ha sido cancelada. Si tienes preguntas, no dudes en contactarnos.' }
+  };
+
+  const config = statusConfig[newStatus] || { color: '#fbbf24', icon: '📋', message: 'El estado de tu solicitud ha sido actualizado.' };
+
+  const content = `
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      Hola <strong style="color: white;">${request.name}</strong>,
+    </p>
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      El estado de tu solicitud de servicio ha sido actualizado:
+    </p>
+    <div style="background-color: rgba(16, 185, 129, 0.1); border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+      <p style="margin: 0 0 10px; font-size: 40px;">${config.icon}</p>
+      <p style="margin: 0; color: ${config.color}; font-size: 24px; font-weight: bold;">${statusName}</p>
+    </div>
+    <div style="background-color: rgba(255,255,255,0.05); border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <table width="100%" cellpadding="5" cellspacing="0">
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Servicio:</td>
+          <td style="color: white; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${serviceName}</td>
+        </tr>
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px; padding-bottom: 10px;">Fecha:</td>
+          <td style="color: white; font-size: 16px; padding-bottom: 10px;">${request.scheduled_date} a las ${request.scheduled_time}</td>
+        </tr>
+        <tr>
+          <td style="color: rgba(255,255,255,0.6); font-size: 14px;">Ubicación:</td>
+          <td style="color: white; font-size: 16px;">${request.location}</td>
+        </tr>
+      </table>
+    </div>
+    <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${config.message}
+    </p>
+    <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6; margin: 0;">
+      Si tienes alguna pregunta, puedes responder a este email o contactarnos directamente.
+    </p>
+  `;
+  return getEmailTemplate(`${config.icon} Actualización de tu Solicitud`, content);
+}
+
+// Send notification email (non-blocking)
+async function sendNotificationEmail(to, subject, htmlContent) {
+  if (!emailTransporter) {
+    console.log('Email not configured, skipping notification to:', to);
+    return;
+  }
+
+  try {
+    await emailTransporter.sendMail({
+      from: `"Drone Service" <${getFromEmail()}>`,
+      to: to,
+      subject: subject,
+      html: htmlContent
+    });
+    console.log('Notification email sent to:', to);
+  } catch (error) {
+    console.error('Failed to send notification email:', error.message);
+  }
+}
+
 // Allowed origins for CORS
 const allowedOrigins = [
   'https://cieniowanie.droneagri.pl',
@@ -184,6 +483,20 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Generate token
     const token = jwt.sign({ userId: result.insertId }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Send welcome email to user (non-blocking)
+    sendNotificationEmail(
+      email.toLowerCase(),
+      '🚁 ¡Bienvenido/a a Drone Service!',
+      getWelcomeEmailTemplate(name)
+    );
+
+    // Send notification to admin about new registration (non-blocking)
+    sendNotificationEmail(
+      ADMIN_EMAILS[0],
+      '🆕 Nuevo Usuario Registrado - Drone Service',
+      getAdminNewUserEmailTemplate(email.toLowerCase(), name)
+    );
 
     res.status(201).json({
       user: {
@@ -405,6 +718,33 @@ app.post('/api/service-requests', authenticateToken, async (req, res) => {
       [req.user.id, service, scheduledDate, scheduledTime, name, email, phone, location, area || null, notes || null]
     );
 
+    // Prepare request data for emails
+    const requestData = {
+      service,
+      scheduledDate,
+      scheduledTime,
+      name,
+      email,
+      phone,
+      location,
+      area,
+      notes
+    };
+
+    // Send confirmation email to client (non-blocking)
+    sendNotificationEmail(
+      email,
+      '📋 Solicitud de Servicio Recibida - Drone Service',
+      getClientServiceRequestEmailTemplate(requestData)
+    );
+
+    // Send notification to admin (non-blocking)
+    sendNotificationEmail(
+      ADMIN_EMAILS[0],
+      `🆕 Nueva Solicitud: ${SERVICE_NAMES[service] || service} - ${name}`,
+      getAdminServiceRequestEmailTemplate(requestData)
+    );
+
     res.status(201).json({
       id: result.insertId,
       service,
@@ -473,10 +813,40 @@ app.put('/api/admin/service-requests/:id/status', authenticateToken, async (req,
       return res.status(400).json({ error: 'Estado inválido' });
     }
 
+    // Get the service request details before updating
+    const [requests] = await pool.execute(
+      'SELECT * FROM service_requests WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (requests.length === 0) {
+      return res.status(404).json({ error: 'Solicitud no encontrada' });
+    }
+
+    const request = requests[0];
+
+    // Update the status
     await pool.execute(
       'UPDATE service_requests SET status = ? WHERE id = ?',
       [status, req.params.id]
     );
+
+    // Send status change notification to client (non-blocking)
+    // Don't send for 'pending' status as it's the initial state
+    if (status !== 'pending' && request.email) {
+      const statusEmoji = {
+        'confirmed': '✅',
+        'in_progress': '🔄',
+        'completed': '🎉',
+        'cancelled': '❌'
+      };
+
+      sendNotificationEmail(
+        request.email,
+        `${statusEmoji[status] || '📋'} Actualización de tu Solicitud - Drone Service`,
+        getClientStatusChangeEmailTemplate(request, status)
+      );
+    }
 
     res.json({ success: true, message: 'Estado actualizado' });
   } catch (error) {
