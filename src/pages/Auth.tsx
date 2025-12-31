@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   Mail,
   Lock,
@@ -168,121 +168,111 @@ export default function Auth() {
             )}
 
             {/* Form */}
-            <AnimatePresence mode="popLayout">
-              <motion.form
-                key={mode}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                onSubmit={handleSubmit}
-                className="space-y-4"
-              >
-                {mode === 'signup' && (
-                  <>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                      <input
-                        type="text"
-                        name="name"
-                        placeholder={t('auth.name')}
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="input-glass pl-12"
-                        required
-                      />
-                    </div>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                      <input
-                        type="tel"
-                        name="phone"
-                        placeholder={t('auth.phone')}
-                        value={formData.phone}
-                        onChange={handleChange}
-                        className="input-glass pl-12"
-                      />
-                    </div>
-                  </>
-                )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {mode === 'signup' && (
+                <>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder={t('auth.name')}
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="input-glass pl-12"
+                      required
+                    />
+                  </div>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="tel"
+                      name="phone"
+                      placeholder={t('auth.phone')}
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="input-glass pl-12"
+                    />
+                  </div>
+                </>
+              )}
 
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder={t('auth.email')}
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="input-glass pl-12"
-                    required
-                  />
-                </div>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder={t('auth.email')}
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="input-glass pl-12"
+                  required
+                />
+              </div>
 
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  placeholder={t('auth.password')}
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="input-glass pl-12 pr-12"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+
+              {mode === 'signup' && (
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    placeholder={t('auth.password')}
-                    value={formData.password}
+                    name="confirmPassword"
+                    placeholder={t('auth.confirmPassword')}
+                    value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="input-glass pl-12 pr-12"
+                    className="input-glass pl-12"
                     required
                     minLength={6}
                   />
+                </div>
+              )}
+
+              {mode === 'login' && (
+                <div className="flex justify-end">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors"
+                    className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {t('auth.forgotPassword')}
                   </button>
                 </div>
+              )}
 
-                {mode === 'signup' && (
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="confirmPassword"
-                      placeholder={t('auth.confirmPassword')}
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      className="input-glass pl-12"
-                      required
-                      minLength={6}
-                    />
-                  </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    {mode === 'login' ? t('auth.loggingIn') : t('auth.signingUp')}
+                  </>
+                ) : (
+                  mode === 'login' ? t('auth.loginButton') : t('auth.signupButton')
                 )}
-
-                {mode === 'login' && (
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
-                    >
-                      {t('auth.forgotPassword')}
-                    </button>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      {mode === 'login' ? t('auth.loggingIn') : t('auth.signingUp')}
-                    </>
-                  ) : (
-                    mode === 'login' ? t('auth.loginButton') : t('auth.signupButton')
-                  )}
-                </button>
-              </motion.form>
-            </AnimatePresence>
+              </button>
+            </form>
 
             {/* Terms */}
             {mode === 'signup' && (
