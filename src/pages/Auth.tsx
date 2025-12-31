@@ -144,7 +144,7 @@ export default function Auth() {
                     setMode(tab)
                     setError(null)
                   }}
-                  className={`flex-1 py-3 rounded-lg font-medium transition-all duration-300 ${
+                  className={`flex-1 py-3 rounded-lg font-medium transition-all duration-150 ${
                     mode === tab
                       ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
                       : 'text-white/60 hover:text-white'
@@ -168,13 +168,13 @@ export default function Auth() {
             )}
 
             {/* Form */}
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="popLayout">
               <motion.form
                 key={mode}
-                initial={{ opacity: 0, x: mode === 'login' ? -20 : 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: mode === 'login' ? 20 : -20 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
                 onSubmit={handleSubmit}
                 className="space-y-4"
               >
