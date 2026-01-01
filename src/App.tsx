@@ -8,9 +8,11 @@ import AdminSettings from './pages/AdminSettings'
 import Privacy from './pages/Privacy'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
+import CookieConsent from './components/CookieConsent'
 
 function App() {
   return (
+    <>
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
@@ -41,6 +43,8 @@ function App() {
         }
       />
     </Routes>
+    <CookieConsent />
+    </>
   )
 }
 

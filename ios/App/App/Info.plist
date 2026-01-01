@@ -50,11 +50,40 @@
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
+		<false/>
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>cieniowanie.droneagri.pl</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+		</dict>
 	</dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This app would like to use tracking to provide a better advertising experience. Your data will be handled according to GDPR regulations.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Drone Service needs your location to show nearby services and provide accurate field mapping.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Drone Service needs camera access to capture field images for analysis.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Drone Service needs photo library access to save field analysis images.</string>
 </dict>
 </plist>

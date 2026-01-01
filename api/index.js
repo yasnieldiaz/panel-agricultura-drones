@@ -9,10 +9,18 @@ const path = require('path');
 const crypto = require('crypto');
 const { Vonage } = require('@vonage/server-sdk');
 const nodemailer = require('nodemailer');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'drone-panel-secret-key-2024';
+
+// SECURITY: JWT Secret must be set via environment variable
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  console.error('CRITICAL: JWT_SECRET must be set and at least 32 characters');
+  process.exit(1);
+}
 
 // Config file path
 const CONFIG_FILE = path.join(__dirname, 'config.json');
@@ -820,8 +828,44 @@ const allowedOrigins = [
   'https://cieniowanie.droneagri.pl',
   'http://localhost:5173',
   'http://localhost:3000',
-  'http://127.0.0.1:5173'
+  'http://127.0.0.1:5173',
+  'capacitor://localhost', // iOS app
+  'ionic://localhost' // Ionic apps
 ];
+
+// SECURITY: Helmet middleware for secure headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled for API
+  crossOriginEmbedderPolicy: false
+}));
+
+// SECURITY: Rate limiting
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: { error: 'Demasiadas solicitudes, intente de nuevo más tarde' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login attempts per windowMs
+  message: { error: 'Demasiados intentos de login, intente de nuevo en 15 minutos' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // Limit each IP to 3 password reset requests per hour
+  message: { error: 'Demasiadas solicitudes de recuperación, intente de nuevo más tarde' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Apply general rate limiting
+app.use(generalLimiter);
 
 // Middleware
 app.use(cors({
@@ -831,11 +875,13 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    return callback(null, true); // Allow all for now
+    // SECURITY: Reject unknown origins in production
+    console.warn('CORS blocked origin:', origin);
+    return callback(new Error('No permitido por CORS'), false);
   },
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10kb' })); // SECURITY: Limit body size
 
 // Database connection pool
 const pool = mysql.createPool({
@@ -943,8 +989,8 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// Login
-app.post('/api/auth/login', async (req, res) => {
+// Login - with rate limiting
+app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -1031,8 +1077,8 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
   }
 });
 
-// Forgot password - send reset email
-app.post('/api/auth/forgot-password', async (req, res) => {
+// Forgot password - send reset email (with rate limiting)
+app.post('/api/auth/forgot-password', passwordResetLimiter, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -1178,10 +1224,179 @@ app.put('/api/admin/users/:id/password', authenticateToken, async (req, res) => 
   }
 });
 
+// ==================== GDPR ENDPOINTS ====================
+// Compliance with EU General Data Protection Regulation
+
+// GDPR Article 20: Data Portability - Export user data
+app.get('/api/gdpr/export', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get user data
+    const [userData] = await pool.execute(
+      'SELECT id, email, name, language, created_at FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (userData.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Get user's service requests
+    const [serviceRequests] = await pool.execute(
+      'SELECT id, service, scheduled_date, scheduled_time, name, email, phone, location, area, notes, status, created_at FROM service_requests WHERE user_id = ?',
+      [userId]
+    );
+
+    // Prepare data export
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      gdprInfo: {
+        regulation: 'EU General Data Protection Regulation (GDPR)',
+        article: 'Article 20 - Right to data portability',
+        dataController: 'Drone Service, Ul. Smolna 14, 44-200 Rybnik, Poland',
+        contact: 'admin@drone-partss.com'
+      },
+      personalData: {
+        id: userData[0].id,
+        email: userData[0].email,
+        name: userData[0].name,
+        preferredLanguage: userData[0].language,
+        accountCreated: userData[0].created_at
+      },
+      serviceRequests: serviceRequests.map(sr => ({
+        id: sr.id,
+        service: sr.service,
+        scheduledDate: sr.scheduled_date,
+        scheduledTime: sr.scheduled_time,
+        contactName: sr.name,
+        contactEmail: sr.email,
+        contactPhone: sr.phone,
+        location: sr.location,
+        area: sr.area,
+        notes: sr.notes,
+        status: sr.status,
+        createdAt: sr.created_at
+      }))
+    };
+
+    // Set headers for JSON download
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="drone-service-data-export-${userId}-${Date.now()}.json"`);
+    res.json(exportData);
+  } catch (error) {
+    console.error('GDPR export error:', error);
+    res.status(500).json({ error: 'Error al exportar datos' });
+  }
+});
+
+// GDPR Article 17: Right to Erasure - Delete user account
+app.delete('/api/gdpr/delete-account', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { password, confirmDelete } = req.body;
+
+    // Require explicit confirmation
+    if (confirmDelete !== 'DELETE_MY_ACCOUNT') {
+      return res.status(400).json({
+        error: 'Debe confirmar la eliminación enviando confirmDelete: "DELETE_MY_ACCOUNT"'
+      });
+    }
+
+    // Verify password for security
+    const [userData] = await pool.execute('SELECT password, role FROM users WHERE id = ?', [userId]);
+
+    if (userData.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Prevent admin from deleting their own account
+    if (userData[0].role === 'admin') {
+      return res.status(403).json({ error: 'Los administradores no pueden eliminar su propia cuenta' });
+    }
+
+    // Verify password
+    const validPassword = await bcrypt.compare(password, userData[0].password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+
+    // Delete user's service requests first (foreign key constraint)
+    await pool.execute('DELETE FROM service_requests WHERE user_id = ?', [userId]);
+
+    // Delete user account
+    await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
+
+    res.json({
+      success: true,
+      message: 'Cuenta eliminada correctamente según el Artículo 17 del RGPD (Derecho al olvido)',
+      gdprInfo: {
+        regulation: 'EU General Data Protection Regulation (GDPR)',
+        article: 'Article 17 - Right to erasure',
+        deletedData: ['Datos de usuario', 'Solicitudes de servicio']
+      }
+    });
+  } catch (error) {
+    console.error('GDPR delete account error:', error);
+    res.status(500).json({ error: 'Error al eliminar cuenta' });
+  }
+});
+
+// GDPR: Get user consent status
+app.get('/api/gdpr/consent', authenticateToken, async (req, res) => {
+  try {
+    const [userData] = await pool.execute(
+      'SELECT privacy_consent, privacy_consent_date, marketing_consent, marketing_consent_date FROM users WHERE id = ?',
+      [req.user.id]
+    );
+
+    if (userData.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({
+      privacyConsent: userData[0].privacy_consent || false,
+      privacyConsentDate: userData[0].privacy_consent_date,
+      marketingConsent: userData[0].marketing_consent || false,
+      marketingConsentDate: userData[0].marketing_consent_date
+    });
+  } catch (error) {
+    console.error('Get consent error:', error);
+    res.status(500).json({ error: 'Error al obtener estado de consentimiento' });
+  }
+});
+
+// GDPR: Update consent preferences
+app.put('/api/gdpr/consent', authenticateToken, async (req, res) => {
+  try {
+    const { marketingConsent } = req.body;
+    const now = new Date();
+
+    await pool.execute(
+      'UPDATE users SET marketing_consent = ?, marketing_consent_date = ? WHERE id = ?',
+      [marketingConsent ? 1 : 0, now, req.user.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Preferencias de consentimiento actualizadas',
+      marketingConsent,
+      updatedAt: now.toISOString()
+    });
+  } catch (error) {
+    console.error('Update consent error:', error);
+    res.status(500).json({ error: 'Error al actualizar consentimiento' });
+  }
+});
+
 // ==================== CONFIG ENDPOINTS ====================
+// SECURITY: All config endpoints require admin authentication
 
 // Get current config (without secrets)
-app.get('/api/config', (req, res) => {
+app.get('/api/config', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
   res.json({
     vonage: {
       apiKey: config.vonage?.apiKey ? config.vonage.apiKey.substring(0, 4) + '****' : '',
@@ -1200,8 +1415,11 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-// Update Vonage config
-app.post('/api/config/vonage', (req, res) => {
+// Update Vonage config (admin only)
+app.post('/api/config/vonage', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
   const { apiKey, apiSecret, fromNumber } = req.body;
 
   // Initialize vonage config if it doesn't exist
@@ -1236,8 +1454,11 @@ app.post('/api/config/vonage', (req, res) => {
   res.json({ success: true, message: 'Vonage configuration saved' });
 });
 
-// Update SMTP config
-app.post('/api/config/smtp', (req, res) => {
+// Update SMTP config (admin only)
+app.post('/api/config/smtp', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
   const { host, port, user, pass, fromEmail } = req.body;
 
   // Initialize smtp config if it doesn't exist
@@ -1280,8 +1501,11 @@ app.post('/api/config/smtp', (req, res) => {
   res.json({ success: true, message: 'SMTP configuration saved' });
 });
 
-// Test Vonage connection
-app.post('/api/config/test-vonage', async (req, res) => {
+// Test Vonage connection (admin only)
+app.post('/api/config/test-vonage', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
   if (!vonage) {
     return res.status(400).json({ error: 'Vonage not configured' });
   }
@@ -1300,8 +1524,11 @@ app.post('/api/config/test-vonage', async (req, res) => {
   }
 });
 
-// Test SMTP connection
-app.post('/api/config/test-smtp', async (req, res) => {
+// Test SMTP connection (admin only)
+app.post('/api/config/test-smtp', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
   if (!emailTransporter) {
     return res.status(400).json({ error: 'SMTP not configured' });
   }
@@ -1493,8 +1720,11 @@ app.delete('/api/admin/service-requests/:id', authenticateToken, async (req, res
 
 // ==================== SMS SEND ====================
 
-// Send SMS (admin only or for testing)
-app.post('/api/sms/send', async (req, res) => {
+// Send SMS (admin only)
+app.post('/api/sms/send', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
   if (!vonage) {
     return res.status(400).json({ error: 'Vonage not configured', success: false });
   }
@@ -1531,8 +1761,11 @@ app.post('/api/sms/send', async (req, res) => {
 
 // ==================== EMAIL SEND ====================
 
-// Send Email (for testing)
-app.post('/api/email/send', async (req, res) => {
+// Send Email (admin only)
+app.post('/api/email/send', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
   if (!emailTransporter) {
     return res.status(400).json({ error: 'SMTP not configured', success: false });
   }

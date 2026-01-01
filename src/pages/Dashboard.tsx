@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -12,83 +12,53 @@ import {
   CheckCircle2,
   Circle,
   Loader2,
-  Plus
+  Plus,
+  XCircle
 } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../hooks/useAuth'
+import { serviceRequestsApi, type ServiceRequest } from '../lib/api'
 import LanguageSelector from '../components/LanguageSelector'
 import ServiceRequestModal from '../components/ServiceRequestModal'
 import Logo from '../components/Logo'
 
-// Types
-interface Job {
-  id: string
-  service: string
-  serviceKey: string
-  date: string
-  location: string
-  area: number
-  status: 'completed' | 'scheduled' | 'pending' | 'inProgress'
+// Service name mapping
+const SERVICE_KEYS: Record<string, string> = {
+  'fumigation': 'service.fumigation.title',
+  'mapping': 'service.mapping.title',
+  'painting': 'service.painting.title',
+  'rental': 'service.rental.title'
 }
 
-// Mock data - In production this would come from Supabase
-const mockJobs: Job[] = [
-  {
-    id: '1',
-    service: 'Fumigación con Drones',
-    serviceKey: 'service.fumigation.title',
-    date: '2024-12-15',
-    location: 'Finca El Olivo, Almería',
-    area: 25,
-    status: 'completed'
-  },
-  {
-    id: '2',
-    service: 'Mapeo Aéreo',
-    serviceKey: 'service.mapping.title',
-    date: '2024-12-20',
-    location: 'Campo Verde, Granada',
-    area: 40,
-    status: 'completed'
-  },
-  {
-    id: '3',
-    service: 'Pintura de Invernaderos',
-    serviceKey: 'service.painting.title',
-    date: '2025-01-10',
-    location: 'Invernaderos Sol, Murcia',
-    area: 15,
-    status: 'scheduled'
-  },
-  {
-    id: '4',
-    service: 'Fumigación con Drones',
-    serviceKey: 'service.fumigation.title',
-    date: '2025-01-15',
-    location: 'Finca El Olivo, Almería',
-    area: 30,
-    status: 'scheduled'
-  },
-  {
-    id: '5',
-    service: 'Modelos de Elevación',
-    serviceKey: 'service.elevation.title',
-    date: '2025-01-25',
-    location: 'Terrenos Norte, Valencia',
-    area: 50,
-    status: 'pending'
-  }
-]
-
-type TabType = 'all' | 'completed' | 'scheduled' | 'pending'
+type TabType = 'all' | 'completed' | 'confirmed' | 'pending'
 
 export default function Dashboard() {
   const { t } = useLanguage()
-  const { user, signOut, loading } = useAuth()
+  const { user, signOut, loading: authLoading, token } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TabType>('all')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [serviceModalOpen, setServiceModalOpen] = useState(false)
+  const [jobs, setJobs] = useState<ServiceRequest[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch user's service requests
+  useEffect(() => {
+    const fetchJobs = async () => {
+      if (!token) return
+
+      try {
+        const data = await serviceRequestsApi.getMyRequests()
+        setJobs(data)
+      } catch (err) {
+        console.error('Error fetching jobs:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchJobs()
+  }, [token])
 
   const handleLogout = async () => {
     await signOut()
@@ -111,37 +81,57 @@ export default function Dashboard() {
   // Get jobs for a specific date
   const getJobsForDate = (day: number) => {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    return mockJobs.filter(job => job.date === dateStr)
+    return jobs.filter(job => job.scheduledDate === dateStr || (job as any).scheduled_date === dateStr)
+  }
+
+  // Map API status to display status
+  const mapStatus = (status: string | undefined) => {
+    if (!status) return 'pending'
+    if (status === 'in_progress') return 'inProgress'
+    return status
   }
 
   // Filter jobs by tab
   const filteredJobs = useMemo(() => {
-    if (activeTab === 'all') return mockJobs
-    return mockJobs.filter(job => job.status === activeTab)
-  }, [activeTab])
+    if (activeTab === 'all') return jobs
+    if (activeTab === 'confirmed') {
+      return jobs.filter(job => job.status === 'confirmed' || job.status === 'in_progress')
+    }
+    return jobs.filter(job => job.status === activeTab)
+  }, [activeTab, jobs])
 
   // Get status color
-  const getStatusColor = (status: Job['status']) => {
-    switch (status) {
+  const getStatusColor = (status: string | undefined) => {
+    const s = mapStatus(status)
+    switch (s) {
       case 'completed': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-      case 'scheduled': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+      case 'confirmed': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
       case 'pending': return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
       case 'inProgress': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+      case 'in_progress': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+      case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30'
       default: return 'bg-white/20 text-white/60 border-white/30'
     }
   }
 
-  const getStatusIcon = (status: Job['status']) => {
-    switch (status) {
+  const getStatusIcon = (status: string | undefined) => {
+    const s = mapStatus(status)
+    switch (s) {
       case 'completed': return <CheckCircle2 className="w-4 h-4" />
-      case 'scheduled': return <Clock className="w-4 h-4" />
+      case 'confirmed': return <Clock className="w-4 h-4" />
       case 'pending': return <Circle className="w-4 h-4" />
       case 'inProgress': return <Loader2 className="w-4 h-4 animate-spin" />
+      case 'in_progress': return <Loader2 className="w-4 h-4 animate-spin" />
+      case 'cancelled': return <XCircle className="w-4 h-4" />
       default: return <Circle className="w-4 h-4" />
     }
   }
 
-  if (loading) {
+  const getServiceKey = (service: string) => {
+    return SERVICE_KEYS[service] || service
+  }
+
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
@@ -204,10 +194,10 @@ export default function Dashboard() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
         >
           {[
-            { label: t('dashboard.completed'), value: mockJobs.filter(j => j.status === 'completed').length, color: 'from-emerald-500 to-teal-500' },
-            { label: t('dashboard.scheduled'), value: mockJobs.filter(j => j.status === 'scheduled').length, color: 'from-blue-500 to-cyan-500' },
-            { label: t('dashboard.pending'), value: mockJobs.filter(j => j.status === 'pending').length, color: 'from-amber-500 to-orange-500' },
-            { label: t('dashboard.all'), value: mockJobs.length, color: 'from-purple-500 to-pink-500' },
+            { label: t('dashboard.completed'), value: jobs.filter(j => j.status === 'completed').length, color: 'from-emerald-500 to-teal-500' },
+            { label: t('dashboard.confirmed'), value: jobs.filter(j => j.status === 'confirmed' || j.status === 'in_progress').length, color: 'from-blue-500 to-cyan-500' },
+            { label: t('dashboard.pending'), value: jobs.filter(j => j.status === 'pending').length, color: 'from-amber-500 to-orange-500' },
+            { label: t('dashboard.all'), value: jobs.length, color: 'from-purple-500 to-pink-500' },
           ].map((stat, index) => (
             <div key={index} className="card-glass">
               <div className={`text-3xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
@@ -283,7 +273,7 @@ export default function Dashboard() {
                               key={idx}
                               className={`w-1.5 h-1.5 rounded-full ${
                                 job.status === 'completed' ? 'bg-emerald-500' :
-                                job.status === 'scheduled' ? 'bg-blue-500' :
+                                (job.status === 'confirmed' || job.status === 'in_progress') ? 'bg-blue-500' :
                                 'bg-amber-500'
                               }`}
                             />
@@ -303,7 +293,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center gap-1.5 text-xs">
                   <div className="w-2 h-2 rounded-full bg-blue-500" />
-                  <span className="text-white/60">{t('dashboard.scheduled')}</span>
+                  <span className="text-white/60">{t('dashboard.confirmed')}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs">
                   <div className="w-2 h-2 rounded-full bg-amber-500" />
@@ -337,7 +327,7 @@ export default function Dashboard() {
 
               {/* Tabs */}
               <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                {(['all', 'completed', 'scheduled', 'pending'] as TabType[]).map((tab) => (
+                {(['all', 'completed', 'confirmed', 'pending'] as TabType[]).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -359,41 +349,54 @@ export default function Dashboard() {
                     {t('dashboard.noJobs')}
                   </div>
                 ) : (
-                  filteredJobs.map((job, index) => (
-                    <motion.div
-                      key={job.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="glass-dark rounded-xl p-4 hover:bg-white/10 transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-white">{t(job.serviceKey)}</h3>
-                            <span className={`px-2 py-0.5 rounded-full text-xs border flex items-center gap-1 ${getStatusColor(job.status)}`}>
-                              {getStatusIcon(job.status)}
-                              {t(`dashboard.status.${job.status}`)}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-4 text-sm text-white/60">
-                            <div className="flex items-center gap-1.5">
-                              <CalendarIcon className="w-4 h-4" />
-                              {new Date(job.date).toLocaleDateString()}
+                  filteredJobs.map((job, index) => {
+                    const serviceKey = getServiceKey(job.service || (job as any).service_type || '')
+                    const jobDate = job.scheduledDate || (job as any).scheduled_date
+                    const jobLocation = job.location || ''
+                    const jobArea = parseFloat(String(job.area || 0))
+
+                    return (
+                      <motion.div
+                        key={job.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="glass-dark rounded-xl p-4 hover:bg-white/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-semibold text-white">{t(serviceKey)}</h3>
+                              <span className={`px-2 py-0.5 rounded-full text-xs border flex items-center gap-1 ${getStatusColor(job.status)}`}>
+                                {getStatusIcon(job.status)}
+                                {t(`dashboard.status.${mapStatus(job.status)}`)}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <MapPin className="w-4 h-4" />
-                              {job.location}
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-medium text-emerald-400">{job.area}</span>
-                              {t('dashboard.hectares')}
+                            <div className="flex flex-wrap gap-4 text-sm text-white/60">
+                              {jobDate && (
+                                <div className="flex items-center gap-1.5">
+                                  <CalendarIcon className="w-4 h-4" />
+                                  {new Date(jobDate).toLocaleDateString()}
+                                </div>
+                              )}
+                              {jobLocation && (
+                                <div className="flex items-center gap-1.5">
+                                  <MapPin className="w-4 h-4" />
+                                  {jobLocation}
+                                </div>
+                              )}
+                              {jobArea > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-medium text-emerald-400">{jobArea}</span>
+                                  {t('dashboard.hectares')}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))
+                      </motion.div>
+                    )
+                  })
                 )}
               </div>
             </div>

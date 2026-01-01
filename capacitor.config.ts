@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.dronegarden.app',
+  appId: 'com.dronegardenv2.app',
   appName: 'Drone Service',
   webDir: 'dist',
   server: {

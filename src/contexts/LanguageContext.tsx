@@ -89,6 +89,24 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.rights': 'Todos los derechos reservados.',
     'footer.privacy': 'Politica de Privacidad',
 
+    // Cookie Consent
+    'cookies.title': 'Usamos cookies',
+    'cookies.description': 'Utilizamos cookies para mejorar tu experiencia en nuestra web. Al continuar navegando, aceptas nuestro uso de cookies según nuestra',
+    'cookies.privacyLink': 'Política de Privacidad',
+    'cookies.acceptAll': 'Aceptar todas',
+    'cookies.acceptNecessary': 'Solo necesarias',
+    'cookies.customize': 'Personalizar',
+    'cookies.settingsTitle': 'Preferencias de cookies',
+    'cookies.necessary': 'Cookies necesarias',
+    'cookies.necessaryDesc': 'Esenciales para el funcionamiento del sitio',
+    'cookies.analytics': 'Cookies de análisis',
+    'cookies.analyticsDesc': 'Nos ayudan a entender cómo usas el sitio',
+    'cookies.marketing': 'Cookies de marketing',
+    'cookies.marketingDesc': 'Se utilizan para mostrarte anuncios relevantes',
+    'cookies.required': 'Requeridas',
+    'cookies.savePreferences': 'Guardar preferencias',
+    'cookies.gdprCompliant': 'Cumplimiento RGPD - Regulación (UE) 2016/679',
+
     // Privacy Policy
     'privacy.title': 'Politica de Privacidad',
     'privacy.back': 'Volver al inicio',
@@ -413,6 +431,24 @@ const translations: Record<Language, Record<string, string>> = {
     // Footer
     'footer.rights': 'Wszelkie prawa zastrzeżone.',
     'footer.privacy': 'Polityka Prywatnosci',
+
+    // Cookie Consent
+    'cookies.title': 'Uzywamy plików cookie',
+    'cookies.description': 'Uzywamy plików cookie, aby poprawic Twoje doswiadczenia na naszej stronie. Kontynuujac przegladanie, akceptujesz nasze uzycie plików cookie zgodnie z nasza',
+    'cookies.privacyLink': 'Polityką Prywatności',
+    'cookies.acceptAll': 'Akceptuj wszystkie',
+    'cookies.acceptNecessary': 'Tylko niezbedne',
+    'cookies.customize': 'Dostosuj',
+    'cookies.settingsTitle': 'Preferencje plików cookie',
+    'cookies.necessary': 'Niezbedne pliki cookie',
+    'cookies.necessaryDesc': 'Niezbedne do dzialania strony',
+    'cookies.analytics': 'Analityczne pliki cookie',
+    'cookies.analyticsDesc': 'Pomagaja nam zrozumiec, jak korzystasz ze strony',
+    'cookies.marketing': 'Marketingowe pliki cookie',
+    'cookies.marketingDesc': 'Uzywane do wyswietlania odpowiednich reklam',
+    'cookies.required': 'Wymagane',
+    'cookies.savePreferences': 'Zapisz preferencje',
+    'cookies.gdprCompliant': 'Zgodnosc z RODO - Rozporzadzenie (UE) 2016/679',
 
     // Privacy Policy
     'privacy.title': 'Polityka Prywatnosci',
@@ -739,6 +775,24 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.rights': 'All rights reserved.',
     'footer.privacy': 'Privacy Policy',
 
+    // Cookie Consent
+    'cookies.title': 'We use cookies',
+    'cookies.description': 'We use cookies to improve your experience on our website. By continuing to browse, you accept our use of cookies according to our',
+    'cookies.privacyLink': 'Privacy Policy',
+    'cookies.acceptAll': 'Accept all',
+    'cookies.acceptNecessary': 'Necessary only',
+    'cookies.customize': 'Customize',
+    'cookies.settingsTitle': 'Cookie preferences',
+    'cookies.necessary': 'Necessary cookies',
+    'cookies.necessaryDesc': 'Essential for site functionality',
+    'cookies.analytics': 'Analytics cookies',
+    'cookies.analyticsDesc': 'Help us understand how you use the site',
+    'cookies.marketing': 'Marketing cookies',
+    'cookies.marketingDesc': 'Used to show you relevant ads',
+    'cookies.required': 'Required',
+    'cookies.savePreferences': 'Save preferences',
+    'cookies.gdprCompliant': 'GDPR Compliant - Regulation (EU) 2016/679',
+
     // Privacy Policy
     'privacy.title': 'Privacy Policy',
     'privacy.back': 'Back to home',
@@ -1064,6 +1118,24 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.rights': 'Všechna práva vyhrazena.',
     'footer.privacy': 'Zásady ochrany osobních údajů',
 
+    // Cookie Consent
+    'cookies.title': 'Používáme cookies',
+    'cookies.description': 'Používáme cookies ke zlepšení vašeho zážitku na našich stránkách. Pokračováním v prohlížení souhlasíte s naším používáním cookies podle naší',
+    'cookies.privacyLink': 'Zásady ochrany osobních údajů',
+    'cookies.acceptAll': 'Přijmout vše',
+    'cookies.acceptNecessary': 'Pouze nezbytné',
+    'cookies.customize': 'Přizpůsobit',
+    'cookies.settingsTitle': 'Předvolby cookies',
+    'cookies.necessary': 'Nezbytné cookies',
+    'cookies.necessaryDesc': 'Nezbytné pro fungování webu',
+    'cookies.analytics': 'Analytické cookies',
+    'cookies.analyticsDesc': 'Pomáhají nám pochopit, jak web používáte',
+    'cookies.marketing': 'Marketingové cookies',
+    'cookies.marketingDesc': 'Slouží k zobrazování relevantních reklam',
+    'cookies.required': 'Povinné',
+    'cookies.savePreferences': 'Uložit předvolby',
+    'cookies.gdprCompliant': 'V souladu s GDPR - Nařízení (EU) 2016/679',
+
     // Privacy
     'privacy.title': 'Zásady ochrany osobních údajů',
     'privacy.back': 'Zpět na hlavní stránku',
@@ -1388,6 +1460,24 @@ const translations: Record<Language, Record<string, string>> = {
     // Footer
     'footer.rights': 'Všetky práva vyhradené.',
     'footer.privacy': 'Zásady ochrany osobných údajov',
+
+    // Cookie Consent
+    'cookies.title': 'Používame cookies',
+    'cookies.description': 'Používame cookies na zlepšenie vášho zážitku na našich stránkach. Pokračovaním v prehliadaní súhlasíte s naším používaním cookies podľa našich',
+    'cookies.privacyLink': 'Zásad ochrany osobných údajov',
+    'cookies.acceptAll': 'Prijať všetky',
+    'cookies.acceptNecessary': 'Len nevyhnutné',
+    'cookies.customize': 'Prispôsobiť',
+    'cookies.settingsTitle': 'Predvoľby cookies',
+    'cookies.necessary': 'Nevyhnutné cookies',
+    'cookies.necessaryDesc': 'Nevyhnutné pre fungovanie webu',
+    'cookies.analytics': 'Analytické cookies',
+    'cookies.analyticsDesc': 'Pomáhajú nám pochopiť, ako web používate',
+    'cookies.marketing': 'Marketingové cookies',
+    'cookies.marketingDesc': 'Slúžia na zobrazovanie relevantných reklám',
+    'cookies.required': 'Povinné',
+    'cookies.savePreferences': 'Uložiť predvoľby',
+    'cookies.gdprCompliant': 'V súlade s GDPR - Nariadenie (EÚ) 2016/679',
 
     // Privacy
     'privacy.title': 'Zásady ochrany osobných údajov',
