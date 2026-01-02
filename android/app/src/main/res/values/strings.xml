@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Drone Service</string>
+    <string name="title_activity_main">Drone Service</string>
+    <string name="package_name">com.dronegardenv2.app</string>
+    <string name="custom_url_scheme">com.dronegardenv2.app</string>
+</resources>
