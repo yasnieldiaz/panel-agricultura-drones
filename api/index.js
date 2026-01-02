@@ -1189,6 +1189,147 @@ app.get('/api/admin/users', authenticateToken, async (req, res) => {
   }
 });
 
+// Admin create user
+app.post('/api/admin/users', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const { email, password, name } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Check if user exists
+    const [existing] = await pool.execute('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'El email ya está registrado' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const role = isAdminEmail(email) ? 'admin' : 'user';
+
+    // Insert user
+    const [result] = await pool.execute(
+      'INSERT INTO users (email, password, role, name) VALUES (?, ?, ?, ?)',
+      [email.toLowerCase(), hashedPassword, role, name || null]
+    );
+
+    // Send welcome email to user (non-blocking)
+    sendNotificationEmail(
+      email.toLowerCase(),
+      '🚁 ¡Bienvenido/a a Drone Service!',
+      getWelcomeEmailTemplate(name)
+    );
+
+    res.status(201).json({
+      success: true,
+      user: {
+        id: result.insertId,
+        email: email.toLowerCase(),
+        role,
+        name
+      },
+      message: 'Usuario creado exitosamente'
+    });
+  } catch (error) {
+    console.error('Admin create user error:', error);
+    res.status(500).json({ error: 'Error al crear usuario' });
+  }
+});
+
+// Admin delete user
+app.delete('/api/admin/users/:id', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const userId = req.params.id;
+
+    // Check if user exists
+    const [rows] = await pool.execute('SELECT id, email, role FROM users WHERE id = ?', [userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Prevent deleting admin accounts
+    if (rows[0].role === 'admin') {
+      return res.status(403).json({ error: 'No se puede eliminar una cuenta de administrador' });
+    }
+
+    // Delete user's service requests first (foreign key constraint)
+    await pool.execute('DELETE FROM service_requests WHERE user_id = ?', [userId]);
+
+    // Delete user
+    await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
+
+    res.json({ success: true, message: 'Usuario eliminado correctamente' });
+  } catch (error) {
+    console.error('Admin delete user error:', error);
+    res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+});
+
+// Admin send password reset email
+app.post('/api/admin/users/:id/send-reset', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const userId = req.params.id;
+
+    // Get user
+    const [rows] = await pool.execute('SELECT id, email, language FROM users WHERE id = ?', [userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const user = rows[0];
+    const lang = user.language || 'es';
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 3600000); // 1 hour
+
+    // Save token to database
+    await pool.execute(
+      'UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?',
+      [resetToken, resetExpires, user.id]
+    );
+
+    // Send reset email
+    const resetUrl = `https://cieniowanie.droneagri.pl/reset-password?token=${resetToken}`;
+
+    const subjectByLang = {
+      es: '🔐 Restablecer tu Contraseña - Drone Service',
+      en: '🔐 Reset Your Password - Drone Service',
+      pl: '🔐 Zresetuj Hasło - Drone Service',
+      cs: '🔐 Obnovit Heslo - Drone Service',
+      sk: '🔐 Obnoviť Heslo - Drone Service'
+    };
+
+    await sendNotificationEmail(
+      user.email,
+      subjectByLang[lang] || subjectByLang['es'],
+      getPasswordResetEmailTemplate(resetUrl, lang)
+    );
+
+    res.json({ success: true, message: 'Email de recuperación enviado' });
+  } catch (error) {
+    console.error('Admin send reset error:', error);
+    res.status(500).json({ error: 'Error al enviar email de recuperación' });
+  }
+});
+
 // Admin change user password
 app.put('/api/admin/users/:id/password', authenticateToken, async (req, res) => {
   try {

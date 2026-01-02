@@ -321,6 +321,13 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-2 sm:gap-4">
               <LanguageSelector />
               <Link
+                to="/admin/clients"
+                className="btn-glass flex items-center gap-2 text-sm px-2 sm:px-4"
+              >
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">Clientes</span>
+              </Link>
+              <Link
                 to="/admin/settings"
                 className="btn-glass flex items-center gap-2 text-sm px-2 sm:px-4"
               >

@@ -172,6 +172,34 @@ export const usersApi = {
     return result;
   },
 
+  async create(email: string, password: string, name?: string): Promise<{ success: boolean; user: AdminUser; message: string }> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_URL}/admin/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify({ email, password, name }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    return result;
+  },
+
+  async delete(userId: number): Promise<{ success: boolean; message: string }> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    return result;
+  },
+
   async changeUserPassword(userId: number, newPassword: string): Promise<{ success: boolean; message: string }> {
     const token = localStorage.getItem('auth_token');
     const response = await fetch(`${API_URL}/admin/users/${userId}/password`, {
@@ -181,6 +209,19 @@ export const usersApi = {
         ...(token && { Authorization: `Bearer ${token}` }),
       },
       body: JSON.stringify({ newPassword }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    return result;
+  },
+
+  async sendPasswordReset(userId: number): Promise<{ success: boolean; message: string }> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_URL}/admin/users/${userId}/send-reset`, {
+      method: 'POST',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error);

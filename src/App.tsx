@@ -5,6 +5,7 @@ import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminSettings from './pages/AdminSettings'
+import AdminClients from './pages/AdminClients'
 import Privacy from './pages/Privacy'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
@@ -39,6 +40,14 @@ function App() {
         element={
           <AdminRoute>
             <AdminSettings />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/clients"
+        element={
+          <AdminRoute>
+            <AdminClients />
           </AdminRoute>
         }
       />
