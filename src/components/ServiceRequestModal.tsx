@@ -56,13 +56,16 @@ export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }
     phone: '',
     location: '',
     area: '',
-    notes: ''
+    notes: '',
+    flightHours: '',
+    damagedParts: ''
   })
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const isRentalService = selectedService === 'rental'
+  const isRepairService = selectedService === 'repair'
 
   // Calculate rental days
   const rentalDays = useMemo(() => {
@@ -103,7 +106,11 @@ export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }
         phone: formData.phone,
         location: formData.location,
         area: formData.area,
-        notes: isRentalService ? `${formData.notes}\n[Días de alquiler: ${rentalDays}]` : formData.notes
+        notes: isRentalService
+          ? `${formData.notes}\n[Días de alquiler: ${rentalDays}]`
+          : isRepairService
+            ? `${formData.notes}\n[Horas de vuelo: ${formData.flightHours}]\n[Partes dañadas: ${formData.damagedParts}]`
+            : formData.notes
       })
       setSubmitted(true)
     } catch (err) {
@@ -119,7 +126,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }
     setSelectedDate('')
     setSelectedEndDate('')
     setSelectedTime('')
-    setFormData({ name: '', email: '', phone: '', location: '', area: '', notes: '' })
+    setFormData({ name: '', email: '', phone: '', location: '', area: '', notes: '', flightHours: '', damagedParts: '' })
     setSubmitted(false)
     setError(null)
     setLoading(false)
@@ -134,7 +141,8 @@ export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }
   const canProceedStep2 = isRentalService
     ? selectedDate !== '' && selectedEndDate !== '' && selectedTime !== '' && rentalDays > 0
     : selectedDate !== '' && selectedTime !== ''
-  const canSubmit = formData.name && formData.email && formData.phone && formData.location
+  const canSubmit = formData.name && formData.email && formData.phone && formData.location &&
+    (!isRepairService || (formData.flightHours && formData.damagedParts))
 
   // Get today's date in YYYY-MM-DD format for min date
   const today = new Date().toISOString().split('T')[0]
@@ -341,8 +349,8 @@ export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }
                         ))}
                       </div>
 
-                      {/* Weather Forecast */}
-                      {selectedDate && (
+                      {/* Weather Forecast - Hidden for repair service */}
+                      {selectedDate && !isRepairService && (
                         <WeatherForecast
                           selectedDate={selectedDate}
                           selectedEndDate={isRentalService ? selectedEndDate : undefined}
@@ -402,20 +410,55 @@ export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }
                               required
                             />
                           </div>
-                          <div>
-                            <label className="block text-white/60 text-sm mb-1">
-                              {t('serviceRequest.form.area')}
-                            </label>
-                            <input
-                              type="text"
-                              name="area"
-                              value={formData.area}
-                              onChange={handleInputChange}
-                              placeholder={t('serviceRequest.form.areaPlaceholder')}
-                              className="input-glass w-full"
-                            />
-                          </div>
+                          {!isRepairService && (
+                            <div>
+                              <label className="block text-white/60 text-sm mb-1">
+                                {t('serviceRequest.form.area')}
+                              </label>
+                              <input
+                                type="text"
+                                name="area"
+                                value={formData.area}
+                                onChange={handleInputChange}
+                                placeholder={t('serviceRequest.form.areaPlaceholder')}
+                                className="input-glass w-full"
+                              />
+                            </div>
+                          )}
                         </div>
+                        {/* Repair Service Fields */}
+                        {isRepairService && (
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-white/60 text-sm mb-1">
+                                {t('serviceRequest.repair.flightHours')} *
+                              </label>
+                              <input
+                                type="text"
+                                name="flightHours"
+                                value={formData.flightHours}
+                                onChange={handleInputChange}
+                                placeholder={t('serviceRequest.repair.flightHoursPlaceholder')}
+                                className="input-glass w-full"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-white/60 text-sm mb-1">
+                                {t('serviceRequest.repair.damagedParts')} *
+                              </label>
+                              <input
+                                type="text"
+                                name="damagedParts"
+                                value={formData.damagedParts}
+                                onChange={handleInputChange}
+                                placeholder={t('serviceRequest.repair.damagedPartsPlaceholder')}
+                                className="input-glass w-full"
+                                required
+                              />
+                            </div>
+                          </div>
+                        )}
                         <div>
                           <label className="block text-white/60 text-sm mb-1 flex items-center gap-2">
                             <MapPin className="w-4 h-4" />
