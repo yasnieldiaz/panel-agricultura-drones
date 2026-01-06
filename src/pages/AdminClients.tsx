@@ -90,7 +90,7 @@ export default function AdminClients() {
 
     try {
       await usersApi.create(createForm.email, createForm.password, createForm.name || undefined, createForm.role)
-      setSuccess(createForm.role === 'admin' ? 'Administrador creado exitosamente' : 'Cliente creado exitosamente')
+      setSuccess(createForm.role === 'admin' ? t('admin.clients.adminCreated') : t('admin.clients.clientCreated'))
       setShowCreateModal(false)
       setCreateForm({ email: '', password: '', name: '', role: 'user' })
       fetchUsers()
@@ -109,7 +109,7 @@ export default function AdminClients() {
 
     try {
       await usersApi.delete(userId)
-      setSuccess('Cliente eliminado correctamente')
+      setSuccess(t('admin.clients.clientDeleted'))
       setConfirmDelete(null)
       setUsers(prev => prev.filter(u => u.id !== userId))
     } catch (err) {
@@ -132,7 +132,7 @@ export default function AdminClients() {
 
     try {
       await usersApi.changeUserPassword(userId, newPassword)
-      setSuccess('Contraseña actualizada correctamente')
+      setSuccess(t('admin.clients.passwordUpdated'))
       setPasswordForm(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cambiar contraseña')
@@ -149,7 +149,7 @@ export default function AdminClients() {
 
     try {
       await usersApi.sendPasswordReset(userId)
-      setSuccess('Email de recuperación enviado')
+      setSuccess(t('admin.clients.resetEmailSent'))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al enviar email')
     } finally {
@@ -225,15 +225,15 @@ export default function AdminClients() {
             className="inline-flex items-center gap-2 text-white/60 hover:text-white mb-4 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Volver al Panel
+            {t('admin.clients.backToPanel')}
           </Link>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2 flex items-center gap-3">
                 <Users className="w-8 h-8 text-emerald-400" />
-                Gestión de Clientes
+                {t('admin.clients.title')}
               </h1>
-              <p className="text-white/60">Administra los clientes registrados en la plataforma</p>
+              <p className="text-white/60">{t('admin.clients.subtitle')}</p>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -248,7 +248,7 @@ export default function AdminClients() {
                 className="btn-primary flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Nuevo Usuario</span>
+                <span className="hidden sm:inline">{t('admin.clients.newUser')}</span>
               </button>
             </div>
           </div>
@@ -294,19 +294,19 @@ export default function AdminClients() {
             <div className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
               {clients.length}
             </div>
-            <div className="text-white/60 text-sm mt-1">Clientes</div>
+            <div className="text-white/60 text-sm mt-1">{t('admin.clients.clients')}</div>
           </div>
           <div className="card-glass">
             <div className="text-3xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
               {admins.length}
             </div>
-            <div className="text-white/60 text-sm mt-1">Administradores</div>
+            <div className="text-white/60 text-sm mt-1">{t('admin.clients.admins')}</div>
           </div>
           <div className="card-glass">
             <div className="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
               {users.length}
             </div>
-            <div className="text-white/60 text-sm mt-1">Total Usuarios</div>
+            <div className="text-white/60 text-sm mt-1">{t('admin.clients.totalUsers')}</div>
           </div>
         </motion.div>
 
@@ -319,7 +319,7 @@ export default function AdminClients() {
           <div className="glass rounded-2xl p-6">
             <h2 className="text-xl font-semibold text-white flex items-center gap-2 mb-6">
               <Users className="w-5 h-5 text-blue-400" />
-              Clientes Registrados
+              {t('admin.clients.registeredClients')}
             </h2>
 
             {loading ? (
@@ -328,7 +328,7 @@ export default function AdminClients() {
               </div>
             ) : clients.length === 0 ? (
               <div className="text-center py-12 text-white/40">
-                No hay clientes registrados
+                {t('admin.clients.noClients')}
               </div>
             ) : (
               <div className="space-y-3">
@@ -347,7 +347,7 @@ export default function AdminClients() {
                             <User className="w-5 h-5 text-white" />
                           </div>
                           <div>
-                            <div className="font-medium text-white">{client.name || 'Sin nombre'}</div>
+                            <div className="font-medium text-white">{client.name || t('admin.clients.noName')}</div>
                             <div className="text-sm text-white/60 flex items-center gap-1">
                               <Mail className="w-3 h-3" />
                               {client.email}
@@ -410,7 +410,7 @@ export default function AdminClients() {
                               title="Cambiar contraseña"
                             >
                               <Key className="w-3 h-3" />
-                              <span className="hidden sm:inline">Contraseña</span>
+                              <span className="hidden sm:inline">{t('admin.clients.password')}</span>
                             </button>
 
                             {/* Send Reset Email */}
@@ -441,7 +441,7 @@ export default function AdminClients() {
                                   ) : (
                                     <Check className="w-3 h-3" />
                                   )}
-                                  Confirmar
+                                  {t('admin.clients.confirm')}
                                 </button>
                                 <button
                                   onClick={() => setConfirmDelete(null)}
@@ -457,7 +457,7 @@ export default function AdminClients() {
                                 title="Eliminar cliente"
                               >
                                 <Trash2 className="w-3 h-3" />
-                                <span className="hidden sm:inline">Eliminar</span>
+                                <span className="hidden sm:inline">{t('admin.clients.delete')}</span>
                               </button>
                             )}
                           </>
@@ -481,12 +481,12 @@ export default function AdminClients() {
           <div className="glass rounded-2xl p-6">
             <h2 className="text-xl font-semibold text-white flex items-center gap-2 mb-6">
               <Shield className="w-5 h-5 text-amber-400" />
-              Administradores
+              {t('admin.clients.admins')}
             </h2>
 
             {admins.length === 0 ? (
               <div className="text-center py-8 text-white/40">
-                No hay administradores
+                {t('admin.clients.noAdmins')}
               </div>
             ) : (
               <div className="space-y-3">
@@ -556,7 +556,7 @@ export default function AdminClients() {
                               className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 text-xs flex items-center gap-1.5"
                             >
                               <Key className="w-3 h-3" />
-                              Cambiar Contraseña
+                              {t('admin.clients.changePassword')}
                             </button>
                             <button
                               onClick={() => handleSendResetEmail(admin.id)}
@@ -597,7 +597,7 @@ export default function AdminClients() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                 <Plus className="w-5 h-5 text-emerald-400" />
-                Nuevo Usuario
+                {t('admin.clients.newUser')}
               </h3>
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -610,7 +610,7 @@ export default function AdminClients() {
             <form onSubmit={handleCreateUser} className="space-y-4">
               {/* Role selector */}
               <div>
-                <label className="block text-sm text-white/60 mb-2">Tipo de Usuario *</label>
+                <label className="block text-sm text-white/60 mb-2">{t('admin.clients.userType')} *</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -622,7 +622,7 @@ export default function AdminClients() {
                     }`}
                   >
                     <User className="w-4 h-4" />
-                    Cliente
+                    {t('admin.clients.client')}
                   </button>
                   <button
                     type="button"
@@ -634,24 +634,24 @@ export default function AdminClients() {
                     }`}
                   >
                     <Shield className="w-4 h-4" />
-                    Administrador
+                    {t('admin.clients.administrator')}
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm text-white/60 mb-1">Nombre</label>
+                <label className="block text-sm text-white/60 mb-1">{t('admin.clients.name')}</label>
                 <input
                   type="text"
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                   className="input-glass"
-                  placeholder="Nombre del usuario"
+                  placeholder={t('admin.clients.namePlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-white/60 mb-1">Email *</label>
+                <label className="block text-sm text-white/60 mb-1">{t('admin.clients.email')} *</label>
                 <input
                   type="email"
                   value={createForm.email}
@@ -663,14 +663,14 @@ export default function AdminClients() {
               </div>
 
               <div>
-                <label className="block text-sm text-white/60 mb-1">Contraseña *</label>
+                <label className="block text-sm text-white/60 mb-1">{t('admin.clients.password')} *</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={createForm.password}
                     onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                     className="input-glass pr-10"
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder={t('admin.clients.passwordPlaceholder')}
                     required
                     minLength={6}
                   />
@@ -690,7 +690,7 @@ export default function AdminClients() {
                   onClick={() => setShowCreateModal(false)}
                   className="btn-glass flex-1"
                 >
-                  Cancelar
+                  {t('admin.clients.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -708,7 +708,7 @@ export default function AdminClients() {
                   ) : (
                     <Plus className="w-4 h-4" />
                   )}
-                  {createForm.role === 'admin' ? 'Crear Administrador' : 'Crear Cliente'}
+                  {createForm.role === 'admin' ? t('admin.clients.createAdmin') : t('admin.clients.createClient')}
                 </button>
               </div>
             </form>

@@ -5,7 +5,7 @@
 
 SERVER="root@188.137.65.235"
 REMOTE_PATH="/var/www/vhosts/droneagri.pl/cieniowanie.droneagri.pl"
-PASSWORD="Mariannadiaz1501"
+PASSWORD="FisherYou1983"
 
 deploy_frontend() {
     echo "📦 Building frontend..."
