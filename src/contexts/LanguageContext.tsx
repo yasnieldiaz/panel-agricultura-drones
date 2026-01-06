@@ -48,6 +48,8 @@ const translations: Record<Language, Record<string, string>> = {
     'service.elevation.desc': 'Planificación de riego y drenaje con modelos topográficos 3D de alta precisión.',
     'service.rental.title': 'Alquiler de Drones',
     'service.rental.desc': 'Alquiler de drones agrícolas profesionales con o sin operador para tus proyectos.',
+    'service.repair.title': 'Reparación y Mantenimiento',
+    'service.repair.desc': 'Servicio técnico especializado en reparación y mantenimiento de drones agrícolas.',
 
     // About
     'about.title': 'Sobre Nosotros',
@@ -391,6 +393,8 @@ const translations: Record<Language, Record<string, string>> = {
     'service.elevation.desc': 'Planowanie nawadniania i drenażu z precyzyjnymi modelami topograficznymi 3D.',
     'service.rental.title': 'Wynajem Dronów',
     'service.rental.desc': 'Wynajem profesjonalnych dronów rolniczych z operatorem lub bez do Twoich projektów.',
+    'service.repair.title': 'Naprawa i Konserwacja',
+    'service.repair.desc': 'Specjalistyczny serwis techniczny w zakresie naprawy i konserwacji dronów rolniczych.',
 
     // About
     'about.title': 'O Nas',
@@ -734,6 +738,8 @@ const translations: Record<Language, Record<string, string>> = {
     'service.elevation.desc': 'Irrigation and drainage planning with high-precision 3D topographic models.',
     'service.rental.title': 'Drone Rental',
     'service.rental.desc': 'Professional agricultural drone rental with or without operator for your projects.',
+    'service.repair.title': 'Repair and Maintenance',
+    'service.repair.desc': 'Specialized technical service for repair and maintenance of agricultural drones.',
 
     // About
     'about.title': 'About Us',
@@ -1077,6 +1083,8 @@ const translations: Record<Language, Record<string, string>> = {
     'service.elevation.desc': 'Plánování zavlažování a odvodnění s vysoce přesnými 3D topografickými modely.',
     'service.rental.title': 'Pronájem dronů',
     'service.rental.desc': 'Pronájem profesionálních zemědělských dronů s operátorem nebo bez pro vaše projekty.',
+    'service.repair.title': 'Oprava a Údržba',
+    'service.repair.desc': 'Specializovaný technický servis pro opravu a údržbu zemědělských dronů.',
 
     // About
     'about.title': 'O nás',
@@ -1420,6 +1428,8 @@ const translations: Record<Language, Record<string, string>> = {
     'service.elevation.desc': 'Plánovanie zavlažovania a odvodnenia s vysoko presnými 3D topografickými modelmi.',
     'service.rental.title': 'Prenájom dronov',
     'service.rental.desc': 'Prenájom profesionálnych poľnohospodárskych dronov s operátorom alebo bez pre vaše projekty.',
+    'service.repair.title': 'Oprava a Údržba',
+    'service.repair.desc': 'Špecializovaný technický servis pre opravu a údržbu poľnohospodárskych dronov.',
 
     // About
     'about.title': 'O nás',
@@ -1763,6 +1773,8 @@ const translations: Record<Language, Record<string, string>> = {
     'service.elevation.desc': 'Pianificazione di irrigazione e drenaggio con modelli topografici 3D ad alta precisione.',
     'service.rental.title': 'Noleggio Droni',
     'service.rental.desc': 'Noleggio di droni agricoli professionali con o senza operatore per i tuoi progetti.',
+    'service.repair.title': 'Riparazione e Manutenzione',
+    'service.repair.desc': 'Servizio tecnico specializzato per la riparazione e manutenzione di droni agricoli.',
 
     // About
     'about.title': 'Chi Siamo',

@@ -42,7 +42,7 @@ export default function AdminClients() {
 
   // Create user modal
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [createForm, setCreateForm] = useState({ email: '', password: '', name: '' })
+  const [createForm, setCreateForm] = useState({ email: '', password: '', name: '', role: 'user' as 'user' | 'admin' })
   const [createLoading, setCreateLoading] = useState(false)
 
   // Delete confirmation
@@ -89,10 +89,10 @@ export default function AdminClients() {
     setSuccess(null)
 
     try {
-      await usersApi.create(createForm.email, createForm.password, createForm.name || undefined)
-      setSuccess('Cliente creado exitosamente')
+      await usersApi.create(createForm.email, createForm.password, createForm.name || undefined, createForm.role)
+      setSuccess(createForm.role === 'admin' ? 'Administrador creado exitosamente' : 'Cliente creado exitosamente')
       setShowCreateModal(false)
-      setCreateForm({ email: '', password: '', name: '' })
+      setCreateForm({ email: '', password: '', name: '', role: 'user' })
       fetchUsers()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al crear usuario')
@@ -248,7 +248,7 @@ export default function AdminClients() {
                 className="btn-primary flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Nuevo Cliente</span>
+                <span className="hidden sm:inline">Nuevo Usuario</span>
               </button>
             </div>
           </div>
@@ -597,7 +597,7 @@ export default function AdminClients() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                 <Plus className="w-5 h-5 text-emerald-400" />
-                Nuevo Cliente
+                Nuevo Usuario
               </h3>
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -608,6 +608,37 @@ export default function AdminClients() {
             </div>
 
             <form onSubmit={handleCreateUser} className="space-y-4">
+              {/* Role selector */}
+              <div>
+                <label className="block text-sm text-white/60 mb-2">Tipo de Usuario *</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCreateForm({ ...createForm, role: 'user' })}
+                    className={`p-3 rounded-xl border-2 transition-all flex items-center gap-2 justify-center ${
+                      createForm.role === 'user'
+                        ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                        : 'border-white/10 text-white/60 hover:border-white/30'
+                    }`}
+                  >
+                    <User className="w-4 h-4" />
+                    Cliente
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreateForm({ ...createForm, role: 'admin' })}
+                    className={`p-3 rounded-xl border-2 transition-all flex items-center gap-2 justify-center ${
+                      createForm.role === 'admin'
+                        ? 'border-amber-500 bg-amber-500/20 text-amber-400'
+                        : 'border-white/10 text-white/60 hover:border-white/30'
+                    }`}
+                  >
+                    <Shield className="w-4 h-4" />
+                    Administrador
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm text-white/60 mb-1">Nombre</label>
                 <input
@@ -615,7 +646,7 @@ export default function AdminClients() {
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                   className="input-glass"
-                  placeholder="Nombre del cliente"
+                  placeholder="Nombre del usuario"
                 />
               </div>
 
@@ -664,14 +695,20 @@ export default function AdminClients() {
                 <button
                   type="submit"
                   disabled={createLoading}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                    createForm.role === 'admin'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white'
+                      : 'btn-primary'
+                  }`}
                 >
                   {createLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : createForm.role === 'admin' ? (
+                    <Shield className="w-4 h-4" />
                   ) : (
                     <Plus className="w-4 h-4" />
                   )}
-                  Crear Cliente
+                  {createForm.role === 'admin' ? 'Crear Administrador' : 'Crear Cliente'}
                 </button>
               </div>
             </form>

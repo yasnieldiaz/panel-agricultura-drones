@@ -172,7 +172,7 @@ export const usersApi = {
     return result;
   },
 
-  async create(email: string, password: string, name?: string): Promise<{ success: boolean; user: AdminUser; message: string }> {
+  async create(email: string, password: string, name?: string, role: 'user' | 'admin' = 'user'): Promise<{ success: boolean; user: AdminUser; message: string }> {
     const token = localStorage.getItem('auth_token');
     const response = await fetch(`${API_URL}/admin/users`, {
       method: 'POST',
@@ -180,7 +180,7 @@ export const usersApi = {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
       },
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password, name, role }),
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error);

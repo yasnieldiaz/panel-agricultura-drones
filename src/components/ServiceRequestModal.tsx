@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Calendar, Clock, MapPin, Plane, Leaf, Mountain, Check, Send, Loader2, AlertCircle, Truck, CalendarRange } from 'lucide-react'
+import { X, Calendar, Clock, MapPin, Plane, Leaf, Mountain, Check, Send, Loader2, AlertCircle, Truck, CalendarRange, Wrench } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { serviceRequestsApi } from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
@@ -25,6 +25,7 @@ const services: ServiceOption[] = [
   { id: 'mapping', icon: MapPin, titleKey: 'service.mapping.title', color: 'from-cyan-500 to-blue-500' },
   { id: 'elevation', icon: Mountain, titleKey: 'service.elevation.title', color: 'from-blue-500 to-indigo-500' },
   { id: 'rental', icon: Truck, titleKey: 'service.rental.title', color: 'from-indigo-500 to-purple-500' },
+  { id: 'repair', icon: Wrench, titleKey: 'service.repair.title', color: 'from-purple-500 to-pink-500' },
 ]
 
 const timeSlots = [
