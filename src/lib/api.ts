@@ -1,3 +1,5 @@
+import { cache, CACHE_KEYS } from './cache'
+
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 interface User {
@@ -79,8 +81,15 @@ class ApiClient {
 
     try {
       const data = await this.request<{ user: User }>('/auth/me');
+      // Cache the user data
+      cache.set(CACHE_KEYS.USER, data.user);
       return data.user;
-    } catch {
+    } catch (error) {
+      // If offline, try to get from cache
+      if (!navigator.onLine) {
+        const cachedUser = cache.get<User>(CACHE_KEYS.USER);
+        if (cachedUser) return cachedUser;
+      }
       this.removeToken();
       return null;
     }
@@ -162,14 +171,25 @@ export interface AdminUser {
 export const usersApi = {
   async getAll(): Promise<AdminUser[]> {
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_URL}/admin/users`, {
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
-    return result;
+    try {
+      const response = await fetch(`${API_URL}/admin/users`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      // Cache the results
+      cache.set(CACHE_KEYS.USERS, result);
+      return result;
+    } catch (error) {
+      // If offline, return cached data
+      if (!navigator.onLine) {
+        const cached = cache.get<AdminUser[]>(CACHE_KEYS.USERS);
+        if (cached) return cached;
+      }
+      throw error;
+    }
   },
 
   async create(email: string, password: string, name?: string, role: 'user' | 'admin' = 'user'): Promise<{ success: boolean; user: AdminUser; message: string }> {
@@ -248,26 +268,48 @@ export const serviceRequestsApi = {
 
   async getMyRequests(): Promise<ServiceRequest[]> {
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_URL}/service-requests`, {
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
-    return result;
+    try {
+      const response = await fetch(`${API_URL}/service-requests`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      // Cache the results
+      cache.set(CACHE_KEYS.SERVICE_REQUESTS, result);
+      return result;
+    } catch (error) {
+      // If offline, return cached data
+      if (!navigator.onLine) {
+        const cached = cache.get<ServiceRequest[]>(CACHE_KEYS.SERVICE_REQUESTS);
+        if (cached) return cached;
+      }
+      throw error;
+    }
   },
 
   async getAllRequests(): Promise<ServiceRequest[]> {
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_URL}/admin/service-requests`, {
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
-    return result;
+    try {
+      const response = await fetch(`${API_URL}/admin/service-requests`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      // Cache the results
+      cache.set(CACHE_KEYS.ALL_SERVICE_REQUESTS, result);
+      return result;
+    } catch (error) {
+      // If offline, return cached data
+      if (!navigator.onLine) {
+        const cached = cache.get<ServiceRequest[]>(CACHE_KEYS.ALL_SERVICE_REQUESTS);
+        if (cached) return cached;
+      }
+      throw error;
+    }
   },
 
   async updateStatus(id: number, status: string): Promise<{ success: boolean }> {

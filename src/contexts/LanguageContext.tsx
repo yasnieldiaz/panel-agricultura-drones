@@ -51,6 +51,12 @@ const translations: Record<Language, Record<string, string>> = {
     'service.repair.title': 'Reparación y Mantenimiento',
     'service.repair.desc': 'Servicio técnico especializado en reparación y mantenimiento de drones agrícolas.',
 
+    // Offline
+    'offline.noConnection': 'Sin conexión',
+    'offline.usingCache': 'Mostrando datos guardados',
+    'offline.reconnected': '¡Conexión restaurada!',
+    'offline.refresh': 'Actualizar',
+
     // About
     'about.title': 'Sobre Nosotros',
     'about.subtitle': 'Innovación al servicio del',
@@ -433,6 +439,12 @@ const translations: Record<Language, Record<string, string>> = {
     'service.rental.desc': 'Wynajem profesjonalnych dronów rolniczych z operatorem lub bez do Twoich projektów.',
     'service.repair.title': 'Naprawa i Konserwacja',
     'service.repair.desc': 'Specjalistyczny serwis techniczny w zakresie naprawy i konserwacji dronów rolniczych.',
+
+    // Offline
+    'offline.noConnection': 'Brak połączenia',
+    'offline.usingCache': 'Wyświetlanie zapisanych danych',
+    'offline.reconnected': 'Połączenie przywrócone!',
+    'offline.refresh': 'Odśwież',
 
     // About
     'about.title': 'O Nas',
@@ -817,6 +829,12 @@ const translations: Record<Language, Record<string, string>> = {
     'service.repair.title': 'Repair and Maintenance',
     'service.repair.desc': 'Specialized technical service for repair and maintenance of agricultural drones.',
 
+    // Offline
+    'offline.noConnection': 'No connection',
+    'offline.usingCache': 'Showing saved data',
+    'offline.reconnected': 'Connection restored!',
+    'offline.refresh': 'Refresh',
+
     // About
     'about.title': 'About Us',
     'about.subtitle': 'Innovation at the service of',
@@ -1199,6 +1217,12 @@ const translations: Record<Language, Record<string, string>> = {
     'service.rental.desc': 'Pronájem profesionálních zemědělských dronů s operátorem nebo bez pro vaše projekty.',
     'service.repair.title': 'Oprava a Údržba',
     'service.repair.desc': 'Specializovaný technický servis pro opravu a údržbu zemědělských dronů.',
+
+    // Offline
+    'offline.noConnection': 'Bez připojení',
+    'offline.usingCache': 'Zobrazení uložených dat',
+    'offline.reconnected': 'Připojení obnoveno!',
+    'offline.refresh': 'Obnovit',
 
     // About
     'about.title': 'O nás',
@@ -1583,6 +1607,12 @@ const translations: Record<Language, Record<string, string>> = {
     'service.repair.title': 'Oprava a Údržba',
     'service.repair.desc': 'Špecializovaný technický servis pre opravu a údržbu poľnohospodárskych dronov.',
 
+    // Offline
+    'offline.noConnection': 'Bez pripojenia',
+    'offline.usingCache': 'Zobrazenie uložených údajov',
+    'offline.reconnected': 'Pripojenie obnovené!',
+    'offline.refresh': 'Obnoviť',
+
     // About
     'about.title': 'O nás',
     'about.subtitle': 'Inovácie v službách',
@@ -1965,6 +1995,12 @@ const translations: Record<Language, Record<string, string>> = {
     'service.rental.desc': 'Noleggio di droni agricoli professionali con o senza operatore per i tuoi progetti.',
     'service.repair.title': 'Riparazione e Manutenzione',
     'service.repair.desc': 'Servizio tecnico specializzato per la riparazione e manutenzione di droni agricoli.',
+
+    // Offline
+    'offline.noConnection': 'Nessuna connessione',
+    'offline.usingCache': 'Visualizzazione dati salvati',
+    'offline.reconnected': 'Connessione ripristinata!',
+    'offline.refresh': 'Aggiorna',
 
     // About
     'about.title': 'Chi Siamo',

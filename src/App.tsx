@@ -10,10 +10,12 @@ import Privacy from './pages/Privacy'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import CookieConsent from './components/CookieConsent'
+import OfflineIndicator from './components/OfflineIndicator'
 
 function App() {
   return (
     <>
+    <OfflineIndicator />
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
