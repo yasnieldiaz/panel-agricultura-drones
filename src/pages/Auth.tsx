@@ -5,7 +5,6 @@ import {
   Mail,
   Lock,
   User,
-  Phone,
   ArrowLeft,
   Eye,
   EyeOff,
@@ -20,6 +19,7 @@ import { authApi } from '../lib/api'
 import { isAdminEmail } from '../config/admin'
 import LanguageSelector from '../components/LanguageSelector'
 import Logo from '../components/Logo'
+import PhoneInput from '../components/PhoneInput'
 
 type AuthMode = 'login' | 'signup'
 
@@ -33,7 +33,7 @@ export default function Auth() {
   const [forgotLoading, setForgotLoading] = useState(false)
   const [forgotSuccess, setForgotSuccess] = useState(false)
   const [forgotError, setForgotError] = useState<string | null>(null)
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const { signIn, signUp, user, isAdmin } = useAuth()
   const navigate = useNavigate()
 
@@ -99,7 +99,8 @@ export default function Auth() {
 
         const { error } = await signUp(formData.email, formData.password, {
           name: formData.name,
-          phone: formData.phone
+          phone: formData.phone,
+          language: language
         })
 
         if (error) {
@@ -213,15 +214,12 @@ export default function Auth() {
                       required
                     />
                   </div>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                    <input
-                      type="tel"
-                      name="phone"
-                      placeholder={t('auth.phone')}
+                  <div>
+                    <PhoneInput
                       value={formData.phone}
-                      onChange={handleChange}
-                      className="input-glass pl-12"
+                      onChange={(phone) => setFormData(prev => ({ ...prev, phone }))}
+                      placeholder={t('auth.phone')}
+                      className="w-full"
                     />
                   </div>
                 </>

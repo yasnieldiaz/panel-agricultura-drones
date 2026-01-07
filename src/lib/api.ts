@@ -49,10 +49,16 @@ class ApiClient {
     return data;
   }
 
-  async register(email: string, password: string, metadata?: { name?: string }): Promise<AuthResponse> {
+  async register(email: string, password: string, metadata?: { name?: string; phone?: string; language?: string }): Promise<AuthResponse> {
     const data = await this.request<AuthResponse>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name: metadata?.name }),
+      body: JSON.stringify({
+        email,
+        password,
+        name: metadata?.name,
+        phone: metadata?.phone,
+        language: metadata?.language
+      }),
     });
     this.setToken(data.token);
     return data;
@@ -98,6 +104,42 @@ class ApiClient {
   hasToken(): boolean {
     return !!this.getToken();
   }
+
+  // Profile methods
+  async getProfile(): Promise<UserProfile> {
+    const data = await this.request<{ profile: UserProfile }>('/profile');
+    return data.profile;
+  }
+
+  async updateProfile(profileData: Partial<UserProfile>): Promise<{ success: boolean; profile: UserProfile }> {
+    const data = await this.request<{ success: boolean; message: string; profile: UserProfile }>('/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+    return { success: data.success, profile: data.profile };
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+}
+
+export interface UserProfile {
+  id: number;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  language: string;
+  address: string | null;
+  city: string | null;
+  country: string | null;
+  postal_code: string | null;
+  company_name: string | null;
+  tax_id: string | null;
+  created_at: string;
 }
 
 export interface ServiceRequest {
@@ -155,6 +197,33 @@ export const authApi = {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error);
     return result;
+  },
+
+  async getProfile(): Promise<UserProfile> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_URL}/profile`, {
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    return result.profile;
+  },
+
+  async updateProfile(profileData: Partial<UserProfile>): Promise<{ success: boolean; profile: UserProfile }> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_URL}/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(profileData),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    return { success: result.success, profile: result.profile };
   },
 };
 

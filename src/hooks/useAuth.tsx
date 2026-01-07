@@ -7,7 +7,7 @@ interface AuthContextType {
   loading: boolean
   isAdmin: boolean
   token: string | null
-  signUp: (email: string, password: string, metadata?: { name?: string; phone?: string }) => Promise<{ error: Error | null }>
+  signUp: (email: string, password: string, metadata?: { name?: string; phone?: string; language?: string }) => Promise<{ error: Error | null }>
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
 }
@@ -37,9 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth()
   }, [])
 
-  const signUp = async (email: string, password: string, metadata?: { name?: string; phone?: string }) => {
+  const signUp = async (email: string, password: string, metadata?: { name?: string; phone?: string; language?: string }) => {
     try {
-      const { user: newUser } = await api.register(email, password, { name: metadata?.name })
+      const { user: newUser } = await api.register(email, password, {
+        name: metadata?.name,
+        phone: metadata?.phone,
+        language: metadata?.language
+      })
       setUser(newUser)
       setToken(localStorage.getItem('auth_token'))
       return { error: null }

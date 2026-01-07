@@ -128,6 +128,12 @@ const SERVICE_NAMES = {
     'mapping': 'Letecké Mapovanie a Analýza',
     'painting': 'Priemyselné Maľovanie Dronmi',
     'rental': 'Prenájom Dronov'
+  },
+  bg: {
+    'fumigation': 'Фумигация с дронове',
+    'mapping': 'Въздушно картографиране и анализ',
+    'painting': 'Индустриално боядисване с дронове',
+    'rental': 'Наем на дронове'
   }
 };
 
@@ -167,6 +173,13 @@ const STATUS_NAMES = {
     'in_progress': 'Prebieha',
     'completed': 'Dokončené',
     'cancelled': 'Zrušené'
+  },
+  bg: {
+    'pending': 'Изчакване',
+    'confirmed': 'Потвърдено',
+    'in_progress': 'В процес',
+    'completed': 'Завършено',
+    'cancelled': 'Отменено'
   }
 };
 
@@ -571,109 +584,399 @@ function getAdminNewUserEmailTemplate(userEmail, userName) {
   return getEmailTemplate('🆕 Nuevo Usuario Registrado', content, 'es');
 }
 
-// Client notification for service request created
+// Client notification for service request created - DJI Professional Style
 function getClientServiceRequestEmailTemplate(request, lang = 'es') {
   const texts = getLang(lang).serviceRequest;
   const serviceName = getServiceName(request.service, lang);
 
-  const content = `
-    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      ${texts.greeting} <strong style="color: #111827;">${request.name}</strong>,
-    </p>
-    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      ${texts.received}
-    </p>
-    <div style="background-color: #ecfdf5; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #10b981;">
-      <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.service}:</td>
-          <td style="color: #059669; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${serviceName}</td>
-        </tr>
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.scheduledDate}:</td>
-          <td style="color: #111827; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${request.scheduledDate}</td>
-        </tr>
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.time}:</td>
-          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.scheduledTime}</td>
-        </tr>
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.location}:</td>
-          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.location}</td>
-        </tr>
-        ${request.area ? `
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.area}:</td>
-          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.area} ${texts.hectares}</td>
-        </tr>
-        ` : ''}
-        <tr>
-          <td style="color: #6b7280; font-size: 14px;">${texts.status}:</td>
-          <td style="color: #d97706; font-size: 16px; font-weight: bold;">⏳ ${texts.pending}</td>
-        </tr>
-      </table>
-    </div>
-    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      ${texts.willContact}
-    </p>
-    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0;">
-      ${texts.questions}
-    </p>
-  `;
-  return getEmailTemplate(texts.title, content, lang, texts.footer);
+  // Generate request number
+  const requestNumber = `#${Date.now().toString().slice(-8)}`;
+
+  // Multi-language texts for DJI style
+  const djiTexts = {
+    es: {
+      title: 'Solicitud de Servicio Recibida',
+      greeting: 'Estimado Cliente',
+      mainText: `Su solicitud de servicio ha sido recibida y su número de solicitud es <strong style="color: #111827;">${requestNumber}</strong>. Para brindarle un mejor servicio, nuestros representantes pueden <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">llamarle</a> para más información. Si le resulta conveniente, por favor atienda la llamada.`,
+      dashboardText: `Puede visitar su <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Panel de Control</a> para ver el progreso del servicio. Gracias por elegir Drone Service.`,
+      serviceDetails: 'Detalles del Servicio',
+      date: 'Fecha',
+      location: 'Ubicación',
+      flightHours: 'Horas de Vuelo',
+      damagedParts: 'Partes Dañadas',
+      autoMessage: 'Este es un mensaje automático. Las respuestas a este mensaje no serán monitoreadas.',
+      contactInfo: 'Si tiene alguna pregunta, no dude en contactar al Soporte de Drone Service a través de los siguientes canales:',
+      phone: 'Teléfono',
+      email: 'Email',
+      service: 'Servicio',
+      regards: 'Saludos cordiales',
+      supportTeam: 'Soporte Drone Service'
+    },
+    en: {
+      title: 'Service Request Received',
+      greeting: 'Dear Customer',
+      mainText: `Your service request has been received and your request number is <strong style="color: #111827;">${requestNumber}</strong>. To provide you with better service, our representatives may <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">call you</a> for further communication. If convenient, please kindly answer the call.`,
+      dashboardText: `You can visit your <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Dashboard</a> to view the service progress. Thank you for choosing Drone Service.`,
+      serviceDetails: 'Service Details',
+      date: 'Date',
+      location: 'Location',
+      flightHours: 'Flight Hours',
+      damagedParts: 'Damaged Parts',
+      autoMessage: 'This is an automated message. Any replies to this message will not be monitored.',
+      contactInfo: 'If you have any questions, please feel free to contact Drone Service Support via the following channels:',
+      phone: 'Phone',
+      email: 'Email',
+      service: 'Service',
+      regards: 'Best Regards',
+      supportTeam: 'Drone Service Support'
+    },
+    pl: {
+      title: 'Otrzymano Zamówienie Usługi',
+      greeting: 'Szanowny Kliencie',
+      mainText: `Twoje zamówienie usługi zostało otrzymane, a Twój numer zamówienia to <strong style="color: #111827;">${requestNumber}</strong>. Aby zapewnić Ci lepszą obsługę, nasi przedstawiciele mogą <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">zadzwonić</a> w celu dalszej komunikacji. Jeśli to możliwe, prosimy o odebranie połączenia.`,
+      dashboardText: `Możesz odwiedzić swój <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Panel</a>, aby śledzić postęp usługi. Dziękujemy za wybór Drone Service.`,
+      serviceDetails: 'Szczegóły Usługi',
+      date: 'Data',
+      location: 'Lokalizacja',
+      flightHours: 'Godziny Lotu',
+      damagedParts: 'Uszkodzone Części',
+      autoMessage: 'To jest wiadomość automatyczna. Odpowiedzi na tę wiadomość nie będą monitorowane.',
+      contactInfo: 'Jeśli masz pytania, skontaktuj się z pomocą Drone Service przez następujące kanały:',
+      phone: 'Telefon',
+      email: 'Email',
+      service: 'Usługa',
+      regards: 'Z poważaniem',
+      supportTeam: 'Wsparcie Drone Service'
+    },
+    cs: {
+      title: 'Objednávka Služby Přijata',
+      greeting: 'Vážený zákazníku',
+      mainText: `Vaše žádost o službu byla přijata a vaše číslo objednávky je <strong style="color: #111827;">${requestNumber}</strong>. Pro lepší služby vám naši zástupci mohou <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">zavolat</a>. Prosíme, přijměte hovor.`,
+      dashboardText: `Můžete navštívit svůj <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Panel</a> pro sledování průběhu služby. Děkujeme za výběr Drone Service.`,
+      serviceDetails: 'Podrobnosti Služby',
+      date: 'Datum',
+      location: 'Místo',
+      flightHours: 'Letové Hodiny',
+      damagedParts: 'Poškozené Díly',
+      autoMessage: 'Toto je automatická zpráva. Odpovědi na tuto zprávu nebudou sledovány.',
+      contactInfo: 'Máte-li dotazy, kontaktujte podporu Drone Service prostřednictvím následujících kanálů:',
+      phone: 'Telefon',
+      email: 'Email',
+      service: 'Služba',
+      regards: 'S pozdravem',
+      supportTeam: 'Podpora Drone Service'
+    },
+    sk: {
+      title: 'Objednávka Služby Prijatá',
+      greeting: 'Vážený zákazník',
+      mainText: `Vaša žiadosť o službu bola prijatá a vaše číslo objednávky je <strong style="color: #111827;">${requestNumber}</strong>. Pre lepšie služby vám naši zástupcovia môžu <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">zavolať</a>. Prosíme, prijmite hovor.`,
+      dashboardText: `Môžete navštíviť svoj <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Panel</a> pre sledovanie priebehu služby. Ďakujeme za výber Drone Service.`,
+      serviceDetails: 'Podrobnosti Služby',
+      date: 'Dátum',
+      location: 'Miesto',
+      flightHours: 'Letové Hodiny',
+      damagedParts: 'Poškodené Diely',
+      autoMessage: 'Toto je automatická správa. Odpovede na túto správu nebudú sledované.',
+      contactInfo: 'Ak máte otázky, kontaktujte podporu Drone Service prostredníctvom nasledujúcich kanálov:',
+      phone: 'Telefón',
+      email: 'Email',
+      service: 'Služba',
+      regards: 'S pozdravom',
+      supportTeam: 'Podpora Drone Service'
+    },
+    bg: {
+      title: 'Заявката за услуга е получена',
+      greeting: 'Уважаеми клиенте',
+      mainText: `Вашата заявка за услуга е получена и номерът на вашата заявка е <strong style="color: #111827;">${requestNumber}</strong>. За да ви предоставим по-добро обслужване, наши представители може да ви <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">се обадят</a>. Моля, отговорете на обаждането.`,
+      dashboardText: `Можете да посетите своя <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Панел</a>, за да видите напредъка на услугата. Благодарим ви, че избрахте Drone Service.`,
+      serviceDetails: 'Детайли на услугата',
+      date: 'Дата',
+      location: 'Местоположение',
+      flightHours: 'Часове на летене',
+      damagedParts: 'Повредени части',
+      autoMessage: 'Това е автоматично съобщение. Отговорите на това съобщение няма да бъдат наблюдавани.',
+      contactInfo: 'Ако имате въпроси, моля свържете се с поддръжката на Drone Service чрез следните канали:',
+      phone: 'Телефон',
+      email: 'Имейл',
+      service: 'Услуга',
+      regards: 'С уважение',
+      supportTeam: 'Поддръжка Drone Service'
+    }
+  };
+
+  const t = djiTexts[lang] || djiTexts['en'];
+
+  // Build extra details section
+  let extraDetails = '';
+  if (request.flightHours) {
+    extraDetails += `
+      <tr>
+        <td style="font-size: 13px; color: #64748b; padding: 4px 0;">${t.flightHours}: ${request.flightHours}</td>
+        ${request.damagedParts ? `<td style="font-size: 13px; color: #64748b; padding: 4px 0; text-align: right;">${t.damagedParts}: ${request.damagedParts}</td>` : '<td></td>'}
+      </tr>
+    `;
+  } else if (request.damagedParts) {
+    extraDetails += `
+      <tr>
+        <td style="font-size: 13px; color: #64748b; padding: 4px 0;">${t.damagedParts}: ${request.damagedParts}</td>
+        <td></td>
+      </tr>
+    `;
+  }
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff;">
+    <tr>
+      <td align="center">
+        <table width="700" cellpadding="0" cellspacing="0" style="background-color: #ffffff; padding: 50px 40px;">
+
+          <!-- Header Title -->
+          <tr>
+            <td style="text-align: right; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 500; color: #111827;">${t.title}</h1>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding: 30px 0 20px;">
+              <p style="margin: 0; font-size: 15px; color: #374151;">${t.greeting},</p>
+            </td>
+          </tr>
+
+          <!-- Main Text -->
+          <tr>
+            <td style="padding-bottom: 30px;">
+              <p style="margin: 0 0 15px; font-size: 15px; color: #374151; line-height: 1.7;">
+                ${t.mainText}
+              </p>
+              <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.7;">
+                ${t.dashboardText}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Service Details Box -->
+          <tr>
+            <td style="padding-bottom: 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-left: 4px solid #0ea5e9;">
+                <tr>
+                  <td style="padding: 15px 20px;">
+                    <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #475569;">${t.serviceDetails}</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 8px 0;">
+                          <p style="margin: 0; font-size: 15px; font-weight: 600; color: #111827;">${serviceName}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="font-size: 13px; color: #64748b; padding: 4px 0;">${t.date}: ${request.scheduledDate} ${request.scheduledTime}</td>
+                              <td style="font-size: 13px; color: #64748b; padding: 4px 0; text-align: right;">${t.location}: ${request.location}</td>
+                            </tr>
+                            ${extraDetails}
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Automated Message Notice -->
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <p style="margin: 0 0 15px; font-size: 13px; color: #6b7280;">${t.autoMessage}</p>
+              <p style="margin: 0; font-size: 13px; color: #6b7280;">${t.contactInfo}</p>
+            </td>
+          </tr>
+
+          <!-- Contact Info -->
+          <tr>
+            <td style="padding-bottom: 30px;">
+              <p style="margin: 0 0 5px; font-size: 13px; color: #374151;"><strong>${t.phone}:</strong></p>
+              <p style="margin: 0 0 3px; font-size: 13px; color: #6b7280;">${t.service}: +48 696 350 197 &nbsp;&nbsp; 9:00-18:00 (CET) Mon-Fri</p>
+              <p style="margin: 15px 0 5px; font-size: 13px; color: #374151;"><strong>${t.email}:</strong></p>
+              <p style="margin: 0; font-size: 13px;"><a href="mailto:admin@drone-partss.com" style="color: #0ea5e9; text-decoration: none;">admin@drone-partss.com</a></p>
+            </td>
+          </tr>
+
+          <!-- Signature -->
+          <tr>
+            <td style="padding-top: 10px;">
+              <p style="margin: 0 0 5px; font-size: 14px; color: #374151;">${t.regards},</p>
+              <p style="margin: 0; font-size: 14px; font-weight: 600; color: #111827;">${t.supportTeam}</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
 }
 
-// Admin notification for new service request
+// Admin notification for new service request - DJI Professional Style (Clean)
 function getAdminServiceRequestEmailTemplate(request) {
   const serviceName = getServiceName(request.service, 'es');
-  const content = `
-    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-      Se ha recibido una nueva solicitud de servicio:
-    </p>
-    <div style="background-color: #fef3c7; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-      <h3 style="margin: 0 0 15px; color: #b45309; font-size: 20px;">${serviceName}</h3>
-      <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px; width: 120px;">Cliente:</td>
-          <td style="color: #111827; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${request.name}</td>
-        </tr>
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">Email:</td>
-          <td style="color: #059669; font-size: 16px; padding-bottom: 10px;">${request.email}</td>
-        </tr>
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">Teléfono:</td>
-          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.phone}</td>
-        </tr>
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">Fecha:</td>
-          <td style="color: #111827; font-size: 16px; font-weight: bold; padding-bottom: 10px;">📅 ${request.scheduledDate} a las ${request.scheduledTime}</td>
-        </tr>
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">Ubicación:</td>
-          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">📍 ${request.location}</td>
-        </tr>
-        ${request.area ? `
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">Área:</td>
-          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.area} hectáreas</td>
-        </tr>
-        ` : ''}
-        ${request.notes ? `
-        <tr>
-          <td style="color: #6b7280; font-size: 14px; vertical-align: top;">Notas:</td>
-          <td style="color: #374151; font-size: 14px; font-style: italic;">${request.notes}</td>
-        </tr>
-        ` : ''}
-      </table>
-    </div>
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="https://cieniowanie.droneagri.pl/admin" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 14px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
-        Ver en Panel de Admin
-      </a>
-    </div>
-  `;
-  return getEmailTemplate('🆕 Nueva Solicitud de Servicio', content, 'es', 'Acción requerida: Revisar y confirmar solicitud.');
+
+  // Generate request number
+  const requestNumber = `#${Date.now().toString().slice(-8)}`;
+
+  // Build extra details section
+  let extraDetails = '';
+  if (request.flightHours) {
+    extraDetails += `
+      <tr>
+        <td style="font-size: 13px; color: #64748b; padding: 4px 0;">Horas de Vuelo: ${request.flightHours}</td>
+        ${request.damagedParts ? `<td style="font-size: 13px; color: #64748b; padding: 4px 0; text-align: right;">Partes Dañadas: ${request.damagedParts}</td>` : '<td></td>'}
+      </tr>
+    `;
+  } else if (request.damagedParts) {
+    extraDetails += `
+      <tr>
+        <td style="font-size: 13px; color: #64748b; padding: 4px 0;">Partes Dañadas: ${request.damagedParts}</td>
+        <td></td>
+      </tr>
+    `;
+  }
+  if (request.area) {
+    extraDetails += `
+      <tr>
+        <td style="font-size: 13px; color: #64748b; padding: 4px 0;">Área: ${request.area} ha</td>
+        <td></td>
+      </tr>
+    `;
+  }
+  if (request.notes) {
+    extraDetails += `
+      <tr>
+        <td colspan="2" style="font-size: 13px; color: #64748b; padding: 4px 0;">Notas: ${request.notes}</td>
+      </tr>
+    `;
+  }
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff;">
+    <tr>
+      <td align="center">
+        <table width="700" cellpadding="0" cellspacing="0" style="background-color: #ffffff; padding: 50px 40px;">
+
+          <!-- Header Title -->
+          <tr>
+            <td style="text-align: right; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 500; color: #111827;">Nueva Solicitud de Servicio</h1>
+            </td>
+          </tr>
+
+          <!-- Request Number -->
+          <tr>
+            <td style="padding: 30px 0 20px;">
+              <p style="margin: 0; font-size: 15px; color: #374151;">
+                Nueva solicitud recibida. Número de solicitud: <strong style="color: #111827;">${requestNumber}</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Client Info Box -->
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-left: 4px solid #0ea5e9;">
+                <tr>
+                  <td style="padding: 15px 20px;">
+                    <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #475569;">Información del Cliente</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="font-size: 13px; color: #374151; padding: 4px 0;"><strong>Nombre:</strong> ${request.name}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 13px; color: #374151; padding: 4px 0;"><strong>Email:</strong> <a href="mailto:${request.email}" style="color: #0ea5e9; text-decoration: none;">${request.email}</a></td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 13px; color: #374151; padding: 4px 0;"><strong>Teléfono:</strong> <a href="tel:${request.phone}" style="color: #0ea5e9; text-decoration: none;">${request.phone}</a></td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Service Details Box -->
+          <tr>
+            <td style="padding-bottom: 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-left: 4px solid #0ea5e9;">
+                <tr>
+                  <td style="padding: 15px 20px;">
+                    <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #475569;">Detalles del Servicio</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 8px 0;">
+                          <p style="margin: 0; font-size: 15px; font-weight: 600; color: #111827;">${serviceName}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="font-size: 13px; color: #64748b; padding: 4px 0;">Fecha: ${request.scheduledDate} ${request.scheduledTime}</td>
+                              <td style="font-size: 13px; color: #64748b; padding: 4px 0; text-align: right;">Ubicación: ${request.location}</td>
+                            </tr>
+                            ${extraDetails}
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Action Note -->
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <p style="margin: 0; font-size: 13px; color: #6b7280;">
+                Por favor, revisa esta solicitud y contacta al cliente para confirmar los detalles del servicio.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Signature -->
+          <tr>
+            <td style="padding-top: 10px;">
+              <p style="margin: 0 0 5px; font-size: 14px; color: #374151;">Saludos,</p>
+              <p style="margin: 0; font-size: 14px; font-weight: 600; color: #111827;">Sistema Drone Service</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
 }
 
 // Client notification for status change
@@ -833,6 +1136,9 @@ const allowedOrigins = [
   'ionic://localhost' // Ionic apps
 ];
 
+// Trust proxy for rate limiting behind reverse proxy
+app.set('trust proxy', 1);
+
 // SECURITY: Helmet middleware for secure headers
 app.use(helmet({
   contentSecurityPolicy: false, // Disabled for API
@@ -894,6 +1200,41 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// Database migration - add profile columns if not exist
+async function runMigrations() {
+  try {
+    // Add profile columns to users table
+    const profileColumns = [
+      { name: 'address', type: 'VARCHAR(255) DEFAULT NULL' },
+      { name: 'city', type: 'VARCHAR(100) DEFAULT NULL' },
+      { name: 'country', type: 'VARCHAR(100) DEFAULT NULL' },
+      { name: 'postal_code', type: 'VARCHAR(20) DEFAULT NULL' },
+      { name: 'company_name', type: 'VARCHAR(255) DEFAULT NULL' },
+      { name: 'tax_id', type: 'VARCHAR(50) DEFAULT NULL' },
+      { name: 'phone', type: 'VARCHAR(50) DEFAULT NULL' },
+      { name: 'language', type: "VARCHAR(10) DEFAULT 'es'" }
+    ];
+
+    for (const col of profileColumns) {
+      try {
+        await pool.execute(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
+        console.log(`Added column ${col.name} to users table`);
+      } catch (err) {
+        // Column likely already exists, ignore error
+        if (!err.message.includes('Duplicate column name')) {
+          console.log(`Column ${col.name} check: ${err.message}`);
+        }
+      }
+    }
+    console.log('Database migrations completed');
+  } catch (error) {
+    console.error('Migration error:', error);
+  }
+}
+
+// Run migrations on startup
+runMigrations();
+
 // Admin emails
 const ADMIN_EMAILS = ['admin@drone-partss.com'];
 
@@ -932,10 +1273,20 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Welcome email subjects by language
+const WELCOME_EMAIL_SUBJECTS = {
+  es: '¡Bienvenido/a a Drone Service!',
+  en: 'Welcome to Drone Service!',
+  pl: 'Witamy w Drone Service!',
+  cs: 'Vítejte v Drone Service!',
+  sk: 'Vitajte v Drone Service!',
+  bg: 'Добре дошли в Drone Service!'
+};
+
 // Register
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, phone, language } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email y contraseña son requeridos' });
@@ -950,21 +1301,23 @@ app.post('/api/auth/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     const role = isAdminEmail(email) ? 'admin' : 'user';
+    const userLang = language || 'es';
 
-    // Insert user
+    // Insert user with language and phone
     const [result] = await pool.execute(
-      'INSERT INTO users (email, password, role, name) VALUES (?, ?, ?, ?)',
-      [email.toLowerCase(), hashedPassword, role, name || null]
+      'INSERT INTO users (email, password, role, name, phone, language) VALUES (?, ?, ?, ?, ?, ?)',
+      [email.toLowerCase(), hashedPassword, role, name || null, phone || null, userLang]
     );
 
     // Generate token
     const token = jwt.sign({ userId: result.insertId }, JWT_SECRET, { expiresIn: '7d' });
 
-    // Send welcome email to user (non-blocking)
+    // Send welcome email to user in their language (non-blocking)
+    const welcomeSubject = WELCOME_EMAIL_SUBJECTS[userLang] || WELCOME_EMAIL_SUBJECTS['es'];
     sendNotificationEmail(
       email.toLowerCase(),
-      '🚁 ¡Bienvenido/a a Drone Service!',
-      getWelcomeEmailTemplate(name)
+      welcomeSubject,
+      getWelcomeEmailTemplate(name, userLang)
     );
 
     // Send notification to admin about new registration (non-blocking)
@@ -979,7 +1332,9 @@ app.post('/api/auth/register', async (req, res) => {
         id: result.insertId,
         email: email.toLowerCase(),
         role,
-        name
+        name,
+        phone,
+        language: userLang
       },
       token
     });
@@ -1074,6 +1429,71 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({ error: 'Error al cambiar la contraseña' });
+  }
+});
+
+// ==================== USER PROFILE ====================
+
+// Get user profile (full data)
+app.get('/api/profile', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT id, email, name, phone, language, address, city, country, postal_code,
+       company_name, tax_id, created_at
+       FROM users WHERE id = ?`,
+      [req.user.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({ profile: rows[0] });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ error: 'Error al obtener perfil' });
+  }
+});
+
+// Update user profile
+app.put('/api/profile', authenticateToken, async (req, res) => {
+  try {
+    const { name, phone, language, address, city, country, postal_code, company_name, tax_id } = req.body;
+
+    // Convert undefined to null for MySQL
+    const toNull = (val) => val === undefined ? null : val;
+
+    await pool.execute(
+      `UPDATE users SET
+        name = COALESCE(?, name),
+        phone = COALESCE(?, phone),
+        language = COALESCE(?, language),
+        address = COALESCE(?, address),
+        city = COALESCE(?, city),
+        country = COALESCE(?, country),
+        postal_code = COALESCE(?, postal_code),
+        company_name = COALESCE(?, company_name),
+        tax_id = COALESCE(?, tax_id)
+      WHERE id = ?`,
+      [toNull(name), toNull(phone), toNull(language), toNull(address), toNull(city), toNull(country), toNull(postal_code), toNull(company_name), toNull(tax_id), req.user.id]
+    );
+
+    // Get updated profile
+    const [rows] = await pool.execute(
+      `SELECT id, email, name, phone, language, address, city, country, postal_code,
+       company_name, tax_id, created_at
+       FROM users WHERE id = ?`,
+      [req.user.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Perfil actualizado correctamente',
+      profile: rows[0]
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Error al actualizar perfil' });
   }
 });
 
@@ -1684,20 +2104,73 @@ app.post('/api/config/test-smtp', authenticateToken, async (req, res) => {
 
 // ==================== SERVICE REQUESTS ====================
 
+// SMS templates by language
+const SMS_TEMPLATES = {
+  es: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Su solicitud ${requestNumber} para ${serviceName} el ${date} a las ${time} ha sido recibida. Le contactaremos pronto.`,
+  en: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Your request ${requestNumber} for ${serviceName} on ${date} at ${time} has been received. We will contact you soon.`,
+  pl: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Twoje zamówienie ${requestNumber} na ${serviceName} dnia ${date} o ${time} zostało przyjęte. Wkrótce się skontaktujemy.`,
+  cs: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Vaše objednávka ${requestNumber} na ${serviceName} dne ${date} v ${time} byla přijata. Brzy vás kontaktujeme.`,
+  sk: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Vaša objednávka ${requestNumber} na ${serviceName} dňa ${date} o ${time} bola prijatá. Čoskoro vás kontaktujeme.`,
+  bg: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Вашата заявка ${requestNumber} за ${serviceName} на ${date} в ${time} е получена. Ще се свържем с вас скоро.`
+};
+
+// Email subjects by language
+const EMAIL_SUBJECTS = {
+  es: 'Solicitud de Servicio Recibida - Drone Service',
+  en: 'Service Request Received - Drone Service',
+  pl: 'Otrzymano Zamówienie Usługi - Drone Service',
+  cs: 'Objednávka Služby Přijata - Drone Service',
+  sk: 'Objednávka Služby Prijatá - Drone Service',
+  bg: 'Заявката за услуга е получена - Drone Service'
+};
+
+// Send SMS notification (non-blocking)
+async function sendSmsNotification(to, message) {
+  if (!vonage) {
+    console.log('SMS not configured, skipping notification to:', to);
+    return;
+  }
+
+  try {
+    const cleanPhone = to.replace(/[^\d+]/g, '');
+    const response = await vonage.sms.send({
+      to: cleanPhone,
+      from: getFromNumber(),
+      text: message
+    });
+    console.log('SMS notification sent to:', to);
+  } catch (error) {
+    console.error('Failed to send SMS notification:', error.message);
+  }
+}
+
 // Create service request (requires auth)
 app.post('/api/service-requests', authenticateToken, async (req, res) => {
   try {
-    const { service, scheduledDate, scheduledTime, name, email, phone, location, area, notes } = req.body;
+    const { service, scheduledDate, scheduledTime, name, email, phone, location, area, notes, flightHours, damagedParts } = req.body;
 
     if (!service || !scheduledDate || !scheduledTime || !name || !email || !phone || !location) {
       return res.status(400).json({ error: 'Todos los campos requeridos deben completarse' });
     }
+
+    // Get user's language preference
+    const [userRows] = await pool.execute('SELECT language FROM users WHERE id = ?', [req.user.id]);
+    const userLang = userRows[0]?.language || 'es';
 
     const [result] = await pool.execute(
       `INSERT INTO service_requests (user_id, service, scheduled_date, scheduled_time, name, email, phone, location, area, notes)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [req.user.id, service, scheduledDate, scheduledTime, name, email, phone, location, area || null, notes || null]
     );
+
+    // Generate request number
+    const requestNumber = `#${Date.now().toString().slice(-8)}`;
 
     // Prepare request data for emails
     const requestData = {
@@ -1709,20 +2182,33 @@ app.post('/api/service-requests', authenticateToken, async (req, res) => {
       phone,
       location,
       area,
-      notes
+      notes,
+      flightHours,
+      damagedParts
     };
 
-    // Send confirmation email to client (non-blocking)
+    // Get service name in user's language
+    const serviceName = getServiceName(service, userLang);
+
+    // Send confirmation email to client in their language (non-blocking)
+    const emailSubject = EMAIL_SUBJECTS[userLang] || EMAIL_SUBJECTS['es'];
     sendNotificationEmail(
       email,
-      '📋 Solicitud de Servicio Recibida - Drone Service',
-      getClientServiceRequestEmailTemplate(requestData)
+      emailSubject,
+      getClientServiceRequestEmailTemplate(requestData, userLang)
+    );
+
+    // Send SMS notification to client in their language (non-blocking)
+    const smsTemplate = SMS_TEMPLATES[userLang] || SMS_TEMPLATES['es'];
+    sendSmsNotification(
+      phone,
+      smsTemplate(serviceName, scheduledDate, scheduledTime, requestNumber)
     );
 
     // Send notification to admin (non-blocking)
     sendNotificationEmail(
       ADMIN_EMAILS[0],
-      `🆕 Nueva Solicitud: ${SERVICE_NAMES[service] || service} - ${name}`,
+      `🆕 Nueva Solicitud: ${getServiceName(service, 'es')} - ${name}`,
       getAdminServiceRequestEmailTemplate(requestData)
     );
 

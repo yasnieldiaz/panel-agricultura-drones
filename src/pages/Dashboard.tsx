@@ -14,13 +14,15 @@ import {
   Loader2,
   Plus,
   XCircle,
-  HelpCircle
+  HelpCircle,
+  User
 } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../hooks/useAuth'
 import { serviceRequestsApi, type ServiceRequest } from '../lib/api'
 import LanguageSelector from '../components/LanguageSelector'
 import ServiceRequestModal from '../components/ServiceRequestModal'
+import ProfilePanel from '../components/ProfilePanel'
 import Logo from '../components/Logo'
 
 // Service name mapping
@@ -40,6 +42,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('all')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [serviceModalOpen, setServiceModalOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [jobs, setJobs] = useState<ServiceRequest[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -161,6 +164,14 @@ export default function Dashboard() {
 
             <div className="flex items-center gap-4">
               <LanguageSelector />
+              <button
+                onClick={() => setProfileOpen(true)}
+                className="btn-glass flex items-center gap-2 text-sm"
+                title={t('dashboard.profile') || 'Profile'}
+              >
+                <User className="w-4 h-4" />
+                <span className="hidden sm:inline">{t('dashboard.profile') || 'Profile'}</span>
+              </button>
               <Link
                 to="/help"
                 className="btn-glass flex items-center gap-2 text-sm"
@@ -417,6 +428,12 @@ export default function Dashboard() {
       <ServiceRequestModal
         isOpen={serviceModalOpen}
         onClose={() => setServiceModalOpen(false)}
+      />
+
+      {/* Profile Panel */}
+      <ProfilePanel
+        isOpen={profileOpen}
+        onClose={() => setProfileOpen(false)}
       />
     </div>
   )

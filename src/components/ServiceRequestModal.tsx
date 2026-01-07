@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Calendar, Clock, MapPin, Plane, Leaf, Mountain, Check, Send, Loader2, AlertCircle, Truck, CalendarRange, Wrench } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
-import { serviceRequestsApi } from '../lib/api'
+import { serviceRequestsApi, authApi } from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import WeatherForecast from './WeatherForecast'
+import PhoneInput from './PhoneInput'
 
 interface ServiceRequestModalProps {
   isOpen: boolean
@@ -66,6 +67,32 @@ export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }
 
   const isRentalService = selectedService === 'rental'
   const isRepairService = selectedService === 'repair'
+
+  // Auto-fill form with user's profile data when modal opens
+  useEffect(() => {
+    if (isOpen && user) {
+      const fetchProfile = async () => {
+        try {
+          const profile = await authApi.getProfile()
+          setFormData(prev => ({
+            ...prev,
+            name: profile.name || prev.name,
+            email: profile.email || prev.email,
+            phone: profile.phone || prev.phone,
+            location: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}` : prev.location
+          }))
+        } catch (err) {
+          // If profile fetch fails, use basic user data
+          setFormData(prev => ({
+            ...prev,
+            name: user.name || prev.name,
+            email: user.email || prev.email
+          }))
+        }
+      }
+      fetchProfile()
+    }
+  }, [isOpen, user])
 
   // Calculate rental days
   const rentalDays = useMemo(() => {
@@ -401,13 +428,11 @@ export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }
                             <label className="block text-white/60 text-sm mb-1">
                               {t('serviceRequest.form.phone')} *
                             </label>
-                            <input
-                              type="tel"
-                              name="phone"
+                            <PhoneInput
                               value={formData.phone}
-                              onChange={handleInputChange}
-                              className="input-glass w-full"
+                              onChange={(phone) => setFormData(prev => ({ ...prev, phone }))}
                               required
+                              className="w-full"
                             />
                           </div>
                           {!isRepairService && (
