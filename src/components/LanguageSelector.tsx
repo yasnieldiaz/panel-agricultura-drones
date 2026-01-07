@@ -10,6 +10,7 @@ const languages: { code: Language; name: string; flag: string }[] = [
   { code: 'cs', name: 'Čeština', flag: '🇨🇿' },
   { code: 'sk', name: 'Slovenčina', flag: '🇸🇰' },
   { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+  { code: 'bg', name: 'Български', flag: '🇧🇬' },
 ]
 
 export default function LanguageSelector() {
