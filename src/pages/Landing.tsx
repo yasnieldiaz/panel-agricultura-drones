@@ -512,6 +512,9 @@ export default function Landing() {
               <Logo size="sm" />
             </Link>
             <div className="flex items-center gap-6">
+              <Link to="/help" className="text-white/40 hover:text-white/60 text-sm transition-colors">
+                {t('footer.help')}
+              </Link>
               <Link to="/privacy" className="text-white/40 hover:text-white/60 text-sm transition-colors">
                 {t('footer.privacy')}
               </Link>

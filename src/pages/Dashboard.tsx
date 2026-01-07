@@ -13,7 +13,8 @@ import {
   Circle,
   Loader2,
   Plus,
-  XCircle
+  XCircle,
+  HelpCircle
 } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../hooks/useAuth'
@@ -160,6 +161,14 @@ export default function Dashboard() {
 
             <div className="flex items-center gap-4">
               <LanguageSelector />
+              <Link
+                to="/help"
+                className="btn-glass flex items-center gap-2 text-sm"
+                title={t('footer.help')}
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">{t('footer.help')}</span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="btn-glass flex items-center gap-2 text-sm"

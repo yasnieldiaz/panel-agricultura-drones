@@ -26,7 +26,8 @@ import {
   Users,
   Eye,
   EyeOff,
-  AlertCircle
+  AlertCircle,
+  HelpCircle
 } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../hooks/useAuth'
@@ -333,6 +334,13 @@ export default function AdminDashboard() {
               >
                 <Settings className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('settings.title')}</span>
+              </Link>
+              <Link
+                to="/help"
+                className="btn-glass flex items-center gap-2 text-sm px-2 sm:px-4"
+                title={t('footer.help')}
+              >
+                <HelpCircle className="w-4 h-4" />
               </Link>
               <button
                 onClick={handleLogout}
