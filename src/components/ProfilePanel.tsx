@@ -455,6 +455,7 @@ export default function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
                         </select>
                         <p className="text-white/40 text-xs mt-2">{txt.languageNote}</p>
                       </div>
+                      <div></div>
                     </div>
                   </div>
 
