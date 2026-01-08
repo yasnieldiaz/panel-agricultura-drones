@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.dronegardenv2.app',
-  appName: 'Drone Service',
+  appId: 'pl.droneagri.app',
+  appName: 'Panel Agricultura',
   webDir: 'dist',
   server: {
     // Allow loading external URLs
