@@ -48,7 +48,7 @@ const API_URL = import.meta.env.VITE_API_URL || '/api'
 
 export default function AdminSettings() {
   const { t } = useLanguage()
-  const { signOut, loading: authLoading } = useAuth()
+  const { signOut, loading: authLoading, token } = useAuth()
   const navigate = useNavigate()
 
   const [vonageConfig, setVonageConfig] = useState<VonageConfig>({
@@ -79,12 +79,18 @@ export default function AdminSettings() {
 
   // Load current configuration
   useEffect(() => {
-    loadConfig()
-  }, [])
+    if (token) {
+      loadConfig()
+    }
+  }, [token])
 
   const loadConfig = async () => {
     try {
-      const response = await fetch(`${API_URL}/config`)
+      const response = await fetch(`${API_URL}/config`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         if (data.vonage) {
@@ -125,7 +131,10 @@ export default function AdminSettings() {
     try {
       const response = await fetch(`${API_URL}/config/vonage`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(vonageConfig)
       })
 
@@ -152,7 +161,10 @@ export default function AdminSettings() {
     try {
       const response = await fetch(`${API_URL}/config/smtp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(smtpConfig)
       })
 
@@ -178,7 +190,10 @@ export default function AdminSettings() {
 
     try {
       const response = await fetch(`${API_URL}/config/test-vonage`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       })
 
       const data = await response.json()
@@ -203,7 +218,10 @@ export default function AdminSettings() {
     try {
       const response = await fetch(`${API_URL}/config/test-smtp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ testEmail: smtpConfig.user })
       })
 
@@ -235,7 +253,10 @@ export default function AdminSettings() {
     try {
       const response = await fetch(`${API_URL}/sms/send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           to: testPhone,
           message: `🚁 Drone Service - Test SMS\n\nThis is a test message from your Drone Service panel. If you received this, your SMS configuration is working correctly!`
@@ -270,7 +291,10 @@ export default function AdminSettings() {
     try {
       const response = await fetch(`${API_URL}/email/send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           to: testEmail,
           subject: '🚁 Drone Service - Test Email',
