@@ -14,6 +14,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminSettings = lazy(() => import('./pages/AdminSettings'))
 const AdminClients = lazy(() => import('./pages/AdminClients'))
 const Privacy = lazy(() => import('./pages/Privacy'))
+const Terms = lazy(() => import('./pages/Terms'))
 const Help = lazy(() => import('./pages/Help'))
 
 // Loading fallback component
@@ -36,6 +37,7 @@ function App() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/help" element={<Help />} />
         <Route
           path="/dashboard"

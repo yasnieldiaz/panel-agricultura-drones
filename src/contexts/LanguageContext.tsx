@@ -159,6 +159,7 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.rights': 'Todos los derechos reservados.',
     'footer.help': 'Ayuda',
     'footer.privacy': 'Politica de Privacidad',
+    'footer.terms': 'Terminos de Servicio',
 
     // Cookie Consent
     'cookies.title': 'Usamos cookies',
@@ -203,6 +204,31 @@ const translations: Record<Language, Record<string, string>> = {
     'privacy.section8.content': 'Para ejercer sus derechos o realizar consultas sobre privacidad, contactenos en admin@drone-partss.com. Si considera que el tratamiento de sus datos vulnera la normativa, puede presentar una reclamacion ante la Agencia de Proteccion de Datos correspondiente.',
     'privacy.contact.title': 'Contacto para Privacidad',
     'privacy.contact.description': 'Si tiene preguntas sobre esta politica o desea ejercer sus derechos:',
+
+    // Terms of Service
+    'terms.title': 'Terminos de Servicio',
+    'terms.back': 'Volver al inicio',
+    'terms.lastUpdated': 'Ultima actualizacion',
+    'terms.intro': 'La plataforma cieniowanie.droneagri.pl es operada por IMEGA Sp. z o.o. con sede en Rybnik, ul. Smolna 14, 44-200 Rybnik, Polonia. Nos especializamos en servicios agricolas profesionales con drones XAG.',
+    'terms.section1.title': '1. Disposiciones Generales',
+    'terms.section1.content': 'El cliente se define como un adulto con capacidad legal (persona fisica, juridica u organizativa). Un consumidor es especificamente una persona fisica que realiza una compra no relacionada con actividad profesional.\n\nAl utilizar nuestros servicios, acepta estos terminos y condiciones.',
+    'terms.section2.title': '2. Realizacion de Pedidos',
+    'terms.section2.content': 'Los pedidos se pueden realizar en cualquier momento a traves de nuestra plataforma. El proceso incluye:\n\n- Seleccionar el servicio deseado\n- Elegir fecha y ubicacion\n- Revisar el resumen del pedido\n- Confirmar la solicitud\n\nEl contrato se formaliza tras la confirmacion del servicio.',
+    'terms.section3.title': '3. Pagos',
+    'terms.section3.content': 'Aceptamos los siguientes metodos de pago:\n\n- Transferencia bancaria\n- Pago online\n- Pago contra reembolso\n\nLos precios se acuerdan individualmente segun el tipo de servicio y area de trabajo.',
+    'terms.section4.title': '4. Prestacion del Servicio',
+    'terms.section4.content': 'Los servicios se realizan en Polonia y la Union Europea. El plazo tipico de programacion es de 2-7 dias habiles, dependiendo de las condiciones climaticas y disponibilidad.\n\nNos reservamos el derecho de reprogramar servicios por condiciones meteorologicas adversas.',
+    'terms.section5.title': '5. Derecho de Desistimiento',
+    'terms.section5.content': 'Los consumidores disponen de 14 dias sin dar ninguna razon para desistir del servicio, siempre que este no haya sido ejecutado.\n\nEl periodo comienza desde el dia de la confirmacion del servicio.',
+    'terms.section6.title': '6. Reclamaciones',
+    'terms.section6.content': 'Nos comprometemos a prestar servicios de alta calidad. Las reclamaciones pueden presentarse en cualquier forma comprensible.\n\nResolvemos las reclamaciones en un plazo de 14 dias desde su recepcion.',
+    'terms.section7.title': '7. Garantia de Calidad',
+    'terms.section7.content': 'Garantizamos la calidad de nuestros servicios. La garantia no cubre:\n\n- Condiciones meteorologicas adversas durante el servicio\n- Uso incorrecto de productos fitosanitarios proporcionados por el cliente\n- Negligencia o mal uso\n\nLas opciones son repeticion del servicio o reduccion del precio.',
+    'terms.section8.title': '8. Disposiciones Finales',
+    'terms.section8.content': 'Las disputas se resuelven conforme a la legislacion polaca aplicable. Los consumidores pueden acceder a procedimientos extrajudiciales a traves de organismos de proteccion al consumidor.\n\nEstos terminos no limitan los derechos del cliente bajo la legislacion aplicable.',
+    'terms.contact.title': 'Contacto',
+    'terms.contact.description': 'Si tiene preguntas sobre estos terminos:',
+    'nav.terms': 'Terminos',
 
     // Auth
     'auth.login': 'Iniciar Sesión',
@@ -611,6 +637,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Footer
     'footer.rights': 'Wszelkie prawa zastrzeżone.',
     'footer.privacy': 'Polityka Prywatnosci',
+    'footer.terms': 'Regulamin',
     'footer.help': 'Pomoc',
 
     // Cookie Consent
@@ -656,6 +683,31 @@ const translations: Record<Language, Record<string, string>> = {
     'privacy.section8.content': 'Aby skorzystac ze swoich praw lub uzyskac informacje o prywatnosci, skontaktuj sie z nami pod adresem admin@drone-partss.com. Jesli uwazasz, ze przetwarzanie Twoich danych narusza przepisy, mozesz zlozyc skarge do odpowiedniego organu ochrony danych.',
     'privacy.contact.title': 'Kontakt w Sprawie Prywatnosci',
     'privacy.contact.description': 'Jesli masz pytania dotyczace tej polityki lub chcesz skorzystac ze swoich praw:',
+
+    // Terms of Service
+    'terms.title': 'Regulamin',
+    'terms.back': 'Powrot do strony glownej',
+    'terms.lastUpdated': 'Ostatnia aktualizacja',
+    'terms.intro': 'Platforma cieniowanie.droneagri.pl jest prowadzona przez IMEGA Sp. z o.o. z siedziba w Rybniku, ul. Smolna 14, 44-200 Rybnik, Polska. Specjalizujemy sie w profesjonalnych uslugach rolniczych z wykorzystaniem dronow XAG.',
+    'terms.section1.title': '1. Postanowienia Ogolne',
+    'terms.section1.content': 'Klient definiowany jest jako osoba dorosla posiadajaca zdolnosc prawna (osoba fizyczna, prawna lub jednostka organizacyjna). Konsument to osoba fizyczna dokonujaca zakupu niezwiazanego z dzialalnoscia zawodowa.\n\nKorzystajac z naszych uslug, akceptujesz niniejszy regulamin.',
+    'terms.section2.title': '2. Skladanie Zamowien',
+    'terms.section2.content': 'Zamowienia mozna skladac w dowolnym momencie za posrednictwem naszej platformy. Proces obejmuje:\n\n- Wybor zadanej uslugi\n- Wybor daty i lokalizacji\n- Przegla podsumowania zamowienia\n- Potwierdzenie zlecenia\n\nUmowa zostaje zawarta po potwierdzeniu uslugi.',
+    'terms.section3.title': '3. Platnosci',
+    'terms.section3.content': 'Akceptujemy nastepujace metody platnosci:\n\n- Przelew bankowy\n- Platnosc online\n- Platnosc przy odbiorze\n\nCeny sa ustalane indywidualnie w zaleznosci od rodzaju uslugi i obszaru pracy.',
+    'terms.section4.title': '4. Realizacja Uslugi',
+    'terms.section4.content': 'Uslugi realizowane sa w Polsce i Unii Europejskiej. Typowy czas realizacji to 2-7 dni roboczych, w zaleznosci od warunkow pogodowych i dostepnosci.\n\nZastrzegamy sobie prawo do przesuniecia terminu uslugi z powodu niekorzystnych warunkow pogodowych.',
+    'terms.section5.title': '5. Prawo do Odstapienia',
+    'terms.section5.content': 'Konsumenci maja 14 dni na odstapienie od uslugi bez podania przyczyny, pod warunkiem ze usluga nie zostala wykonana.\n\nOkres ten rozpoczyna sie od dnia potwierdzenia uslugi.',
+    'terms.section6.title': '6. Reklamacje',
+    'terms.section6.content': 'Zobowiazujemy sie do swiadczenia uslug wysokiej jakosci. Reklamacje mozna skladac w dowolnej zrozumialej formie.\n\nReklamacje rozpatrujemy w ciagu 14 dni od ich otrzymania.',
+    'terms.section7.title': '7. Gwarancja Jakosci',
+    'terms.section7.content': 'Gwarantujemy jakosc naszych uslug. Gwarancja nie obejmuje:\n\n- Niekorzystnych warunkow pogodowych podczas uslugi\n- Nieprawidlowego uzycia srodkow ochrony roslin dostarczonych przez klienta\n- Zaniedbania lub niewlasciwego uzytkowania\n\nOpcje to powtorzenie uslugi lub obnizenie ceny.',
+    'terms.section8.title': '8. Postanowienia Koncowe',
+    'terms.section8.content': 'Spory rozstrzygane sa zgodnie z obowiazujacym prawem polskim. Konsumenci moga korzystac z pozasadowych procedur rozwiazywania sporow za posrednictwem organow ochrony konsumentow.\n\nNiniejszy regulamin nie ogranicza praw klienta wynikajacych z obowiazujacego prawa.',
+    'terms.contact.title': 'Kontakt',
+    'terms.contact.description': 'Jesli masz pytania dotyczace tego regulaminu:',
+    'nav.terms': 'Regulamin',
 
     // Auth
     'auth.login': 'Zaloguj się',
@@ -1064,6 +1116,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Footer
     'footer.rights': 'All rights reserved.',
     'footer.privacy': 'Privacy Policy',
+    'footer.terms': 'Terms of Service',
     'footer.help': 'Help',
 
     // Cookie Consent
@@ -1109,6 +1162,31 @@ const translations: Record<Language, Record<string, string>> = {
     'privacy.section8.content': 'To exercise your rights or make privacy inquiries, contact us at admin@drone-partss.com. If you believe that the processing of your data violates regulations, you can file a complaint with the relevant Data Protection Authority.',
     'privacy.contact.title': 'Privacy Contact',
     'privacy.contact.description': 'If you have questions about this policy or wish to exercise your rights:',
+
+    // Terms of Service
+    'terms.title': 'Terms of Service',
+    'terms.back': 'Back to home',
+    'terms.lastUpdated': 'Last updated',
+    'terms.intro': 'The platform cieniowanie.droneagri.pl is operated by IMEGA Sp. z o.o. based in Rybnik, ul. Smolna 14, 44-200 Rybnik, Poland. We specialize in professional agricultural services using XAG drones.',
+    'terms.section1.title': '1. General Provisions',
+    'terms.section1.content': 'A client is defined as an adult with legal capacity (natural person, legal entity, or organizational unit). A consumer is specifically a natural person making a purchase unrelated to professional activity.\n\nBy using our services, you accept these terms and conditions.',
+    'terms.section2.title': '2. Placing Orders',
+    'terms.section2.content': 'Orders can be placed at any time through our platform. The process includes:\n\n- Selecting the desired service\n- Choosing date and location\n- Reviewing the order summary\n- Confirming the request\n\nThe contract is formalized after service confirmation.',
+    'terms.section3.title': '3. Payments',
+    'terms.section3.content': 'We accept the following payment methods:\n\n- Bank transfer\n- Online payment\n- Cash on delivery\n\nPrices are agreed individually based on the type of service and work area.',
+    'terms.section4.title': '4. Service Delivery',
+    'terms.section4.content': 'Services are performed in Poland and the European Union. Typical scheduling time is 2-7 business days, depending on weather conditions and availability.\n\nWe reserve the right to reschedule services due to adverse weather conditions.',
+    'terms.section5.title': '5. Right of Withdrawal',
+    'terms.section5.content': 'Consumers have 14 days without giving any reason to withdraw from the service, provided it has not been executed.\n\nThe period begins from the day of service confirmation.',
+    'terms.section6.title': '6. Complaints',
+    'terms.section6.content': 'We are committed to providing high-quality services. Complaints can be submitted in any understandable form.\n\nWe resolve complaints within 14 days of receipt.',
+    'terms.section7.title': '7. Quality Guarantee',
+    'terms.section7.content': 'We guarantee the quality of our services. The guarantee does not cover:\n\n- Adverse weather conditions during service\n- Incorrect use of phytosanitary products provided by the client\n- Negligence or misuse\n\nOptions are service repetition or price reduction.',
+    'terms.section8.title': '8. Final Provisions',
+    'terms.section8.content': 'Disputes are resolved in accordance with applicable Polish law. Consumers can access out-of-court dispute resolution procedures through consumer protection bodies.\n\nThese terms do not limit customer rights under applicable law.',
+    'terms.contact.title': 'Contact',
+    'terms.contact.description': 'If you have questions about these terms:',
+    'nav.terms': 'Terms',
 
     // Auth
     'auth.login': 'Log In',

@@ -13,7 +13,6 @@ import {
   X,
   CalendarPlus,
   Truck,
-  Download,
   Send,
   Loader2
 } from 'lucide-react'
@@ -161,7 +160,6 @@ export default function Landing() {
               <a href="#servicios" className="text-white/70 hover:text-white transition-colors">{t('nav.services')}</a>
               <a href="#nosotros" className="text-white/70 hover:text-white transition-colors">{t('nav.about')}</a>
               <a href="#contacto" className="text-white/70 hover:text-white transition-colors">{t('nav.contact')}</a>
-              <Link to="/privacy" className="text-white/70 hover:text-white transition-colors">{t('nav.privacy')}</Link>
               <a
                 href="https://droneagri.pl"
                 className="text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 font-medium"
@@ -169,14 +167,6 @@ export default function Landing() {
                 rel="noopener noreferrer"
               >
                 <Plane className="w-4 h-4" /> XAG Polska
-              </a>
-              <a
-                href="https://github.com/yasnieldiaz/panel-agricultura-drones/raw/main/DroneService-v1.0.0-release.apk"
-                className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Download className="w-4 h-4" /> {t('nav.downloadApp')}
               </a>
               <LanguageSelector />
               <Link to="/auth" className="btn-primary flex items-center gap-2">
@@ -208,7 +198,6 @@ export default function Landing() {
               <a href="#servicios" className="block text-white/70 hover:text-white">{t('nav.services')}</a>
               <a href="#nosotros" className="block text-white/70 hover:text-white">{t('nav.about')}</a>
               <a href="#contacto" className="block text-white/70 hover:text-white">{t('nav.contact')}</a>
-              <Link to="/privacy" className="block text-white/70 hover:text-white">{t('nav.privacy')}</Link>
               <a
                 href="https://droneagri.pl"
                 className="block text-amber-400 hover:text-amber-300 flex items-center gap-1 font-medium"
@@ -216,14 +205,6 @@ export default function Landing() {
                 rel="noopener noreferrer"
               >
                 <Plane className="w-4 h-4" /> XAG Polska
-              </a>
-              <a
-                href="https://github.com/yasnieldiaz/panel-agricultura-drones/raw/main/DroneService-v1.0.0-release.apk"
-                className="block text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Download className="w-4 h-4" /> {t('nav.downloadApp')}
               </a>
               <Link to="/auth" className="btn-primary inline-flex items-center gap-2">
                 {t('nav.start')} <ArrowRight className="w-4 h-4" />
@@ -618,6 +599,9 @@ export default function Landing() {
               </Link>
               <Link to="/privacy" className="text-white/40 hover:text-white/60 text-sm transition-colors">
                 {t('footer.privacy')}
+              </Link>
+              <Link to="/terms" className="text-white/40 hover:text-white/60 text-sm transition-colors">
+                {t('footer.terms')}
               </Link>
               <p className="text-white/40 text-sm">
                 © 2024 Drone Service. {t('footer.rights')}
