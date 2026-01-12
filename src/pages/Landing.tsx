@@ -14,9 +14,10 @@ import {
   CalendarPlus,
   Truck,
   Send,
-  Loader2
+  Loader2,
+  Download
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../hooks/useAuth'
 import LanguageSelector from '../components/LanguageSelector'
@@ -49,7 +50,13 @@ export default function Landing() {
     message: ''
   })
   const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+  const [isNativeApp, setIsNativeApp] = useState(false)
   const { t } = useLanguage()
+
+  // Detect if running in Capacitor (native app)
+  useEffect(() => {
+    setIsNativeApp(!!(window as any).Capacitor?.isNativePlatform?.())
+  }, [])
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -168,6 +175,16 @@ export default function Landing() {
               >
                 <Plane className="w-4 h-4" /> XAG Polska
               </a>
+              {!isNativeApp && (
+                <a
+                  href="https://github.com/yasnieldiaz/panel-agricultura-drones/raw/main/DroneService-v1.0.0-release.apk"
+                  className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Download className="w-4 h-4" /> {t('nav.downloadApp')}
+                </a>
+              )}
               <LanguageSelector />
               <Link to="/auth" className="btn-primary flex items-center gap-2">
                 {t('nav.start')} <ArrowRight className="w-4 h-4" />
@@ -206,6 +223,16 @@ export default function Landing() {
               >
                 <Plane className="w-4 h-4" /> XAG Polska
               </a>
+              {!isNativeApp && (
+                <a
+                  href="https://github.com/yasnieldiaz/panel-agricultura-drones/raw/main/DroneService-v1.0.0-release.apk"
+                  className="block text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Download className="w-4 h-4" /> {t('nav.downloadApp')}
+                </a>
+              )}
               <Link to="/auth" className="btn-primary inline-flex items-center gap-2">
                 {t('nav.start')} <ArrowRight className="w-4 h-4" />
               </Link>
