@@ -12,7 +12,10 @@ import {
   Menu,
   X,
   CalendarPlus,
-  Truck
+  Truck,
+  Download,
+  Send,
+  Loader2
 } from 'lucide-react'
 import { useState } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -35,12 +38,49 @@ const staggerContainer = {
   },
 }
 
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [serviceModalOpen, setServiceModalOpen] = useState(false)
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  })
+  const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
   const { t } = useLanguage()
   const { user } = useAuth()
   const navigate = useNavigate()
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!contactForm.name || !contactForm.email || !contactForm.message) {
+      return
+    }
+
+    setContactStatus('sending')
+    try {
+      const response = await fetch(`${API_URL}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactForm)
+      })
+
+      if (response.ok) {
+        setContactStatus('success')
+        setContactForm({ name: '', email: '', subject: '', message: '' })
+        setTimeout(() => setContactStatus('idle'), 5000)
+      } else {
+        setContactStatus('error')
+        setTimeout(() => setContactStatus('idle'), 3000)
+      }
+    } catch {
+      setContactStatus('error')
+      setTimeout(() => setContactStatus('idle'), 3000)
+    }
+  }
 
   const handleRequestService = () => {
     if (!user) {
@@ -122,6 +162,22 @@ export default function Landing() {
               <a href="#nosotros" className="text-white/70 hover:text-white transition-colors">{t('nav.about')}</a>
               <a href="#contacto" className="text-white/70 hover:text-white transition-colors">{t('nav.contact')}</a>
               <Link to="/privacy" className="text-white/70 hover:text-white transition-colors">{t('nav.privacy')}</Link>
+              <a
+                href="https://droneagri.pl"
+                className="text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 font-medium"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Plane className="w-4 h-4" /> XAG Polska
+              </a>
+              <a
+                href="https://github.com/yasnieldiaz/panel-agricultura-drones/raw/main/DroneService-v1.0.0-release.apk"
+                className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Download className="w-4 h-4" /> {t('nav.downloadApp')}
+              </a>
               <LanguageSelector />
               <Link to="/auth" className="btn-primary flex items-center gap-2">
                 {t('nav.start')} <ArrowRight className="w-4 h-4" />
@@ -153,6 +209,22 @@ export default function Landing() {
               <a href="#nosotros" className="block text-white/70 hover:text-white">{t('nav.about')}</a>
               <a href="#contacto" className="block text-white/70 hover:text-white">{t('nav.contact')}</a>
               <Link to="/privacy" className="block text-white/70 hover:text-white">{t('nav.privacy')}</Link>
+              <a
+                href="https://droneagri.pl"
+                className="block text-amber-400 hover:text-amber-300 flex items-center gap-1 font-medium"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Plane className="w-4 h-4" /> XAG Polska
+              </a>
+              <a
+                href="https://github.com/yasnieldiaz/panel-agricultura-drones/raw/main/DroneService-v1.0.0-release.apk"
+                className="block text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Download className="w-4 h-4" /> {t('nav.downloadApp')}
+              </a>
               <Link to="/auth" className="btn-primary inline-flex items-center gap-2">
                 {t('nav.start')} <ArrowRight className="w-4 h-4" />
               </Link>
@@ -472,31 +544,60 @@ export default function Landing() {
               </div>
 
               {/* Contact Form */}
-              <form className="glass rounded-2xl p-6 sm:p-8 space-y-4">
+              <form onSubmit={handleContactSubmit} className="glass rounded-2xl p-6 sm:p-8 space-y-4">
+                {contactStatus === 'success' && (
+                  <div className="bg-emerald-500/20 border border-emerald-500/50 rounded-lg p-3 text-emerald-300 text-sm">
+                    {t('contact.form.success')}
+                  </div>
+                )}
+                {contactStatus === 'error' && (
+                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-300 text-sm">
+                    {t('contact.form.error')}
+                  </div>
+                )}
                 <div className="grid sm:grid-cols-2 gap-4">
                   <input
                     type="text"
                     placeholder={t('contact.form.name')}
                     className="input-glass"
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({...contactForm, name: e.target.value})}
+                    required
                   />
                   <input
                     type="email"
                     placeholder={t('contact.form.email')}
                     className="input-glass"
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
+                    required
                   />
                 </div>
                 <input
                   type="text"
                   placeholder={t('contact.form.subject')}
                   className="input-glass"
+                  value={contactForm.subject}
+                  onChange={(e) => setContactForm({...contactForm, subject: e.target.value})}
                 />
                 <textarea
                   placeholder={t('contact.form.message')}
                   rows={4}
                   className="input-glass resize-none"
+                  value={contactForm.message}
+                  onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
+                  required
                 />
-                <button type="submit" className="btn-primary w-full">
-                  {t('contact.form.send')}
+                <button
+                  type="submit"
+                  className="btn-primary w-full flex items-center justify-center gap-2"
+                  disabled={contactStatus === 'sending'}
+                >
+                  {contactStatus === 'sending' ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> {t('contact.form.sending')}</>
+                  ) : (
+                    <><Send className="w-4 h-4" /> {t('contact.form.send')}</>
+                  )}
                 </button>
               </form>
             </motion.div>

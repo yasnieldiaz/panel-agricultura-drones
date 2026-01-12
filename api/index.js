@@ -1235,6 +1235,15 @@ db.exec(`
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS contacts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    subject TEXT,
+    message TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // MySQL-compatible wrapper for SQLite
@@ -2456,6 +2465,57 @@ app.post('/api/email/send', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Email send error:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to send email' });
+  }
+});
+
+// ==================== CONTACT FORM ====================
+
+// Public contact form endpoint
+app.post('/api/contact', async (req, res) => {
+  const { name, email, subject, message } = req.body;
+
+  if (!name || !email || !message) {
+    return res.status(400).json({ error: 'Name, email and message are required' });
+  }
+
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+
+  try {
+    // Store contact in database
+    await pool.execute(
+      `INSERT INTO contacts (name, email, subject, message, created_at) VALUES (?, ?, ?, ?, datetime('now'))`,
+      [name, email, subject || 'Sin asunto', message]
+    );
+
+    // Send notification email to admin if SMTP is configured
+    if (emailTransporter) {
+      try {
+        await emailTransporter.sendMail({
+          from: `"Drone Service Contact" <${getFromEmail()}>`,
+          to: 'admin@drone-partss.com',
+          subject: `Nuevo mensaje de contacto: ${subject || 'Sin asunto'}`,
+          html: `
+            <h2>Nuevo mensaje de contacto</h2>
+            <p><strong>Nombre:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Asunto:</strong> ${subject || 'Sin asunto'}</p>
+            <p><strong>Mensaje:</strong></p>
+            <p>${message.replace(/\n/g, '<br>')}</p>
+          `
+        });
+      } catch (emailError) {
+        console.error('Failed to send notification email:', emailError);
+      }
+    }
+
+    res.json({ success: true, message: 'Contact message received' });
+  } catch (error) {
+    console.error('Contact form error:', error);
+    res.status(500).json({ error: 'Failed to process contact form' });
   }
 });
 

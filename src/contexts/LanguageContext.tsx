@@ -18,6 +18,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.about': 'Nosotros',
     'nav.contact': 'Contacto',
     'nav.privacy': 'Privacidad',
+    'nav.downloadApp': 'Descargar App',
     'nav.start': 'Comenzar',
 
     // Hero
@@ -149,6 +150,9 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.form.subject': 'Asunto',
     'contact.form.message': 'Mensaje',
     'contact.form.send': 'Enviar Mensaje',
+    'contact.form.sending': 'Enviando...',
+    'contact.form.success': 'Mensaje enviado correctamente. Te contactaremos pronto.',
+    'contact.form.error': 'Error al enviar el mensaje. Inténtalo de nuevo.',
     'contact.viewLargerMap': 'Ver mapa mas grande',
 
     // Footer
@@ -467,6 +471,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.about': 'O nas',
     'nav.contact': 'Kontakt',
     'nav.privacy': 'Prywatnosc',
+    'nav.downloadApp': 'Pobierz aplikacje',
     'nav.start': 'Rozpocznij',
 
     // Hero
@@ -598,6 +603,9 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.form.subject': 'Temat',
     'contact.form.message': 'Wiadomość',
     'contact.form.send': 'Wyślij Wiadomość',
+    'contact.form.sending': 'Wysyłanie...',
+    'contact.form.success': 'Wiadomość wysłana pomyślnie. Skontaktujemy się wkrótce.',
+    'contact.form.error': 'Błąd wysyłania wiadomości. Spróbuj ponownie.',
     'contact.viewLargerMap': 'Zobacz wieksza mape',
 
     // Footer
@@ -916,6 +924,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.about': 'About',
     'nav.contact': 'Contact',
     'nav.privacy': 'Privacy',
+    'nav.downloadApp': 'Download App',
     'nav.start': 'Get Started',
 
     // Hero
@@ -1047,6 +1056,9 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.form.subject': 'Subject',
     'contact.form.message': 'Message',
     'contact.form.send': 'Send Message',
+    'contact.form.sending': 'Sending...',
+    'contact.form.success': 'Message sent successfully. We will contact you soon.',
+    'contact.form.error': 'Error sending message. Please try again.',
     'contact.viewLargerMap': 'View larger map',
 
     // Footer
@@ -1365,6 +1377,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.about': 'O nás',
     'nav.contact': 'Kontakt',
     'nav.privacy': 'Soukromí',
+    'nav.downloadApp': 'Stáhnout aplikaci',
     'nav.start': 'Začít',
 
     // Hero
@@ -1496,6 +1509,9 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.form.subject': 'Předmět',
     'contact.form.message': 'Zpráva',
     'contact.form.send': 'Odeslat zprávu',
+    'contact.form.sending': 'Odesílání...',
+    'contact.form.success': 'Zpráva byla úspěšně odeslána. Brzy vás budeme kontaktovat.',
+    'contact.form.error': 'Chyba při odesílání zprávy. Zkuste to prosím znovu.',
     'contact.viewLargerMap': 'Zobrazit větší mapu',
 
     // Footer
@@ -1814,6 +1830,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.about': 'O nás',
     'nav.contact': 'Kontakt',
     'nav.privacy': 'Súkromie',
+    'nav.downloadApp': 'Stiahnuť aplikáciu',
     'nav.start': 'Začať',
 
     // Hero
@@ -1945,6 +1962,9 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.form.subject': 'Predmet',
     'contact.form.message': 'Správa',
     'contact.form.send': 'Odoslať správu',
+    'contact.form.sending': 'Odosielanie...',
+    'contact.form.success': 'Správa bola úspešne odoslaná. Čoskoro vás budeme kontaktovať.',
+    'contact.form.error': 'Chyba pri odosielaní správy. Skúste to prosím znova.',
     'contact.viewLargerMap': 'Zobraziť väčšiu mapu',
 
     // Footer
@@ -2263,6 +2283,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.about': 'Chi Siamo',
     'nav.contact': 'Contatti',
     'nav.privacy': 'Privacy',
+    'nav.downloadApp': 'Download App',
     'nav.start': 'Inizia',
 
     // Hero
@@ -2394,6 +2415,9 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.form.subject': 'Oggetto',
     'contact.form.message': 'Messaggio',
     'contact.form.send': 'Invia Messaggio',
+    'contact.form.sending': 'Invio...',
+    'contact.form.success': 'Messaggio inviato con successo. Ti contatteremo presto.',
+    'contact.form.error': 'Errore nell\'invio del messaggio. Riprova.',
     'contact.viewLargerMap': 'Vedi mappa più grande',
 
     // Footer
@@ -2712,6 +2736,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.about': 'За нас',
     'nav.contact': 'Контакт',
     'nav.privacy': 'Поверителност',
+    'nav.downloadApp': 'Изтеглете приложението',
     'nav.start': 'Започнете',
 
     // Hero
@@ -2843,6 +2868,9 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.form.subject': 'Тема',
     'contact.form.message': 'Съобщение',
     'contact.form.send': 'Изпрати съобщение',
+    'contact.form.sending': 'Изпращане...',
+    'contact.form.success': 'Съобщението е изпратено успешно. Скоро ще се свържем с вас.',
+    'contact.form.error': 'Грешка при изпращане на съобщение. Опитайте отново.',
     'contact.viewLargerMap': 'Виж по-голяма карта',
 
     // Footer
