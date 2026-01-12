@@ -11,11 +11,15 @@ const config: CapacitorConfig = {
   },
   server: {
     androidScheme: 'https',
+    iosScheme: 'https',
     allowNavigation: ['cieniowanie.droneagri.pl', '*.droneagri.pl', '*']
   },
   ios: {
     contentInset: 'automatic',
-    allowsLinkPreview: false
+    allowsLinkPreview: false,
+    backgroundColor: '#000000',
+    scrollEnabled: true,
+    limitsNavigationsToAppBoundDomains: false
   },
   plugins: {
     CapacitorHttp: {
