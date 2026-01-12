@@ -3,11 +3,16 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const mysql = require('mysql2/promise');
+const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { Vonage } = require('@vonage/server-sdk');
+let Vonage;
+try {
+  Vonage = require('@vonage/server-sdk').Vonage;
+} catch (e) {
+  console.log('Vonage SDK not available, SMS disabled');
+}
 const nodemailer = require('nodemailer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -1189,51 +1194,85 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10kb' })); // SECURITY: Limit body size
 
-// Database connection pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'panel_drones',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+// SQLite Database setup
+const DB_PATH = path.join(__dirname, 'database.sqlite');
+const db = new Database(DB_PATH);
 
-// Database migration - add profile columns if not exist
-async function runMigrations() {
-  try {
-    // Add profile columns to users table
-    const profileColumns = [
-      { name: 'address', type: 'VARCHAR(255) DEFAULT NULL' },
-      { name: 'city', type: 'VARCHAR(100) DEFAULT NULL' },
-      { name: 'country', type: 'VARCHAR(100) DEFAULT NULL' },
-      { name: 'postal_code', type: 'VARCHAR(20) DEFAULT NULL' },
-      { name: 'company_name', type: 'VARCHAR(255) DEFAULT NULL' },
-      { name: 'tax_id', type: 'VARCHAR(50) DEFAULT NULL' },
-      { name: 'phone', type: 'VARCHAR(50) DEFAULT NULL' },
-      { name: 'language', type: "VARCHAR(10) DEFAULT 'es'" }
-    ];
+// Create tables if they don't exist
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    role TEXT DEFAULT 'user',
+    name TEXT,
+    phone TEXT,
+    language TEXT DEFAULT 'es',
+    address TEXT,
+    city TEXT,
+    country TEXT,
+    postal_code TEXT,
+    company_name TEXT,
+    tax_id TEXT,
+    password_reset_token TEXT,
+    password_reset_expires TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
 
-    for (const col of profileColumns) {
-      try {
-        await pool.execute(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
-        console.log(`Added column ${col.name} to users table`);
-      } catch (err) {
-        // Column likely already exists, ignore error
-        if (!err.message.includes('Duplicate column name')) {
-          console.log(`Column ${col.name} check: ${err.message}`);
-        }
+  CREATE TABLE IF NOT EXISTS service_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    service TEXT NOT NULL,
+    scheduled_date TEXT NOT NULL,
+    scheduled_time TEXT NOT NULL,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    location TEXT NOT NULL,
+    area TEXT,
+    notes TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+`);
+
+// MySQL-compatible wrapper for SQLite
+const pool = {
+  execute: async (sql, params = []) => {
+    try {
+      // Convert MySQL placeholders to SQLite format
+      let sqliteQuery = sql;
+
+      // Handle COALESCE with nullable params for UPDATE statements
+      if (sql.includes('COALESCE')) {
+        // For profile updates, replace COALESCE pattern
+        sqliteQuery = sql.replace(/COALESCE\(\?, (\w+)\)/g, (match, column) => {
+          return `COALESCE(?, ${column})`;
+        });
       }
-    }
-    console.log('Database migrations completed');
-  } catch (error) {
-    console.error('Migration error:', error);
-  }
-}
 
-// Run migrations on startup
-runMigrations();
+      if (sql.trim().toUpperCase().startsWith('SELECT')) {
+        const stmt = db.prepare(sqliteQuery);
+        const rows = stmt.all(...params);
+        return [rows];
+      } else if (sql.trim().toUpperCase().startsWith('INSERT')) {
+        const stmt = db.prepare(sqliteQuery);
+        const result = stmt.run(...params);
+        return [{ insertId: result.lastInsertRowid, affectedRows: result.changes }];
+      } else {
+        const stmt = db.prepare(sqliteQuery);
+        const result = stmt.run(...params);
+        return [{ affectedRows: result.changes }];
+      }
+    } catch (error) {
+      console.error('SQLite error:', error.message, 'Query:', sql);
+      throw error;
+    }
+  }
+};
+
+console.log('SQLite database initialized at:', DB_PATH);
 
 // Admin emails
 const ADMIN_EMAILS = ['admin@drone-partss.com'];

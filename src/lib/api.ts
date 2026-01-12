@@ -1,6 +1,6 @@
 import { cache, CACHE_KEYS } from './cache'
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://cieniowanie.droneagri.pl/api';
 
 interface User {
   id: number;

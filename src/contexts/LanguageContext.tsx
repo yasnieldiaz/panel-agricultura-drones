@@ -3157,11 +3157,20 @@ const translations: Record<Language, Record<string, string>> = {
   },
 }
 
+// Detectar idioma del dispositivo
+function getDeviceLanguage(): Language {
+  const supportedLanguages: Language[] = ['es', 'pl', 'en', 'cs', 'sk', 'it', 'bg']
+  const browserLang = navigator.language?.split('-')[0] || 'es'
+  return supportedLanguages.includes(browserLang as Language) ? browserLang as Language : 'es'
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('language') as Language
-      return saved || 'es'
+      if (saved) return saved
+      // Auto-detectar idioma del dispositivo
+      return getDeviceLanguage()
     }
     return 'es'
   })

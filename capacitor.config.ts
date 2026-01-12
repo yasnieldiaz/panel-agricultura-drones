@@ -2,15 +2,25 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'pl.droneagri.app',
-  appName: 'Panel Agricultura',
+  appName: 'Drone Service',
   webDir: 'dist',
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: false
+  },
   server: {
-    // Allow loading external URLs
-    allowNavigation: ['cieniowanie.droneagri.pl', '*.droneagri.pl']
+    androidScheme: 'https',
+    allowNavigation: ['cieniowanie.droneagri.pl', '*.droneagri.pl', '*']
   },
   ios: {
     contentInset: 'automatic',
     allowsLinkPreview: false
+  },
+  plugins: {
+    CapacitorHttp: {
+      enabled: true
+    }
   }
 };
 

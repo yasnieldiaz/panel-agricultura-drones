@@ -1,0 +1,2426 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const mysql = require('mysql2/promise');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { Vonage } = require('@vonage/server-sdk');
+const nodemailer = require('nodemailer');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// SECURITY: JWT Secret must be set via environment variable
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  console.error('CRITICAL: JWT_SECRET must be set and at least 32 characters');
+  process.exit(1);
+}
+
+// Config file path
+const CONFIG_FILE = path.join(__dirname, 'config.json');
+
+// Load or create config
+function loadConfig() {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    }
+  } catch (error) {
+    console.error('Error loading config:', error);
+  }
+  return {
+    vonage: {
+      apiKey: process.env.VONAGE_API_KEY || '',
+      apiSecret: process.env.VONAGE_API_SECRET || '',
+      fromNumber: process.env.VONAGE_FROM_NUMBER || 'Drone Service'
+    },
+    smtp: {
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: process.env.SMTP_PORT || '587',
+      user: process.env.SMTP_USER || '',
+      pass: process.env.SMTP_PASS || '',
+      fromEmail: process.env.FROM_EMAIL || 'noreply@droneservice.com'
+    }
+  };
+}
+
+function saveConfig(config) {
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+}
+
+// Current configuration
+let config = loadConfig();
+
+// Create Vonage client
+function createVonageClient() {
+  if (config.vonage && config.vonage.apiKey && config.vonage.apiSecret) {
+    return new Vonage({
+      apiKey: config.vonage.apiKey,
+      apiSecret: config.vonage.apiSecret
+    });
+  }
+  return null;
+}
+
+// Create email transporter
+function createEmailTransporter() {
+  if (config.smtp && config.smtp.user && config.smtp.pass) {
+    return nodemailer.createTransport({
+      host: config.smtp.host,
+      port: parseInt(config.smtp.port),
+      secure: false,
+      auth: {
+        user: config.smtp.user,
+        pass: config.smtp.pass
+      }
+    });
+  }
+  return null;
+}
+
+let vonage = createVonageClient();
+let emailTransporter = createEmailTransporter();
+
+function getFromNumber() {
+  return config.vonage?.fromNumber || 'Drone Service';
+}
+
+function getFromEmail() {
+  return config.smtp?.fromEmail || 'noreply@droneservice.com';
+}
+
+// ==================== EMAIL TEMPLATES ====================
+
+// Multi-language service names
+const SERVICE_NAMES = {
+  es: {
+    'fumigation': 'Fumigación con Drones',
+    'mapping': 'Mapeo y Análisis Aéreo',
+    'painting': 'Pintura Industrial con Drones',
+    'rental': 'Alquiler de Drones'
+  },
+  en: {
+    'fumigation': 'Drone Fumigation',
+    'mapping': 'Aerial Mapping & Analysis',
+    'painting': 'Industrial Drone Painting',
+    'rental': 'Drone Rental'
+  },
+  pl: {
+    'fumigation': 'Fumigacja Dronami',
+    'mapping': 'Mapowanie i Analiza Lotnicza',
+    'painting': 'Malowanie Przemysłowe Dronami',
+    'rental': 'Wynajem Dronów'
+  },
+  cs: {
+    'fumigation': 'Fumigace Drony',
+    'mapping': 'Letecké Mapování a Analýza',
+    'painting': 'Průmyslové Malování Drony',
+    'rental': 'Pronájem Dronů'
+  },
+  sk: {
+    'fumigation': 'Fumigácia Dronmi',
+    'mapping': 'Letecké Mapovanie a Analýza',
+    'painting': 'Priemyselné Maľovanie Dronmi',
+    'rental': 'Prenájom Dronov'
+  },
+  bg: {
+    'fumigation': 'Фумигация с дронове',
+    'mapping': 'Въздушно картографиране и анализ',
+    'painting': 'Индустриално боядисване с дронове',
+    'rental': 'Наем на дронове'
+  }
+};
+
+// Multi-language status names
+const STATUS_NAMES = {
+  es: {
+    'pending': 'Pendiente',
+    'confirmed': 'Confirmado',
+    'in_progress': 'En Progreso',
+    'completed': 'Completado',
+    'cancelled': 'Cancelado'
+  },
+  en: {
+    'pending': 'Pending',
+    'confirmed': 'Confirmed',
+    'in_progress': 'In Progress',
+    'completed': 'Completed',
+    'cancelled': 'Cancelled'
+  },
+  pl: {
+    'pending': 'Oczekujące',
+    'confirmed': 'Potwierdzone',
+    'in_progress': 'W Trakcie',
+    'completed': 'Zakończone',
+    'cancelled': 'Anulowane'
+  },
+  cs: {
+    'pending': 'Čeká',
+    'confirmed': 'Potvrzeno',
+    'in_progress': 'Probíhá',
+    'completed': 'Dokončeno',
+    'cancelled': 'Zrušeno'
+  },
+  sk: {
+    'pending': 'Čaká',
+    'confirmed': 'Potvrdené',
+    'in_progress': 'Prebieha',
+    'completed': 'Dokončené',
+    'cancelled': 'Zrušené'
+  },
+  bg: {
+    'pending': 'Изчакване',
+    'confirmed': 'Потвърдено',
+    'in_progress': 'В процес',
+    'completed': 'Завършено',
+    'cancelled': 'Отменено'
+  }
+};
+
+// Multi-language email texts
+const EMAIL_TEXTS = {
+  es: {
+    welcome: {
+      subject: '¡Bienvenido/a a Drone Service!',
+      title: '¡Bienvenido/a a Drone Service!',
+      greeting: 'Hola',
+      welcomeMsg: '¡Tu cuenta ha sido creada exitosamente!',
+      servicesIntro: 'Ahora puedes acceder a todos nuestros servicios profesionales de drones:',
+      fumigationDesc: 'Aplicación precisa de productos fitosanitarios',
+      mappingDesc: 'Cartografía aérea de alta resolución',
+      paintingDesc: 'Recubrimientos en estructuras de difícil acceso',
+      rentalDesc: 'Equipos profesionales para tus proyectos',
+      howTo: 'Para solicitar un servicio, simplemente inicia sesión en nuestra plataforma y haz clic en "Solicitar Servicio".',
+      button: 'Ir a la Plataforma',
+      questions: 'Si tienes alguna pregunta, no dudes en contactarnos.',
+      footer: 'Gracias por unirte a nuestra plataforma.'
+    },
+    serviceRequest: {
+      subject: 'Solicitud de Servicio Recibida',
+      title: 'Solicitud de Servicio Recibida',
+      greeting: 'Hola',
+      received: 'Hemos recibido tu solicitud de servicio. A continuación los detalles:',
+      service: 'Servicio',
+      scheduledDate: 'Fecha programada',
+      time: 'Hora',
+      location: 'Ubicación',
+      area: 'Área',
+      hectares: 'hectáreas',
+      status: 'Estado',
+      pending: 'Pendiente de confirmación',
+      willContact: 'Nuestro equipo revisará tu solicitud y te contactaremos pronto para confirmar los detalles.',
+      questions: 'Si tienes alguna pregunta, puedes responder a este email o contactarnos directamente.',
+      footer: 'Te notificaremos cuando tu solicitud sea confirmada.'
+    },
+    statusChange: {
+      subject: 'Actualización de tu Solicitud',
+      title: 'Actualización de tu Solicitud',
+      greeting: 'Hola',
+      updated: 'El estado de tu solicitud de servicio ha sido actualizado:',
+      service: 'Servicio',
+      date: 'Fecha',
+      location: 'Ubicación',
+      questions: 'Si tienes alguna pregunta, puedes responder a este email o contactarnos directamente.',
+      messages: {
+        confirmed: '¡Tu solicitud ha sido confirmada! Nuestro equipo estará en la ubicación indicada en la fecha programada.',
+        in_progress: 'Nuestro equipo está trabajando en tu servicio. Te mantendremos informado del progreso.',
+        completed: '¡El servicio ha sido completado exitosamente! Gracias por confiar en Drone Service.',
+        cancelled: 'Tu solicitud ha sido cancelada. Si tienes preguntas, no dudes en contactarnos.'
+      }
+    },
+    footer: {
+      autoEmail: 'Este email fue enviado automáticamente por Drone Service.',
+      rights: 'Todos los derechos reservados'
+    }
+  },
+  en: {
+    welcome: {
+      subject: 'Welcome to Drone Service!',
+      title: 'Welcome to Drone Service!',
+      greeting: 'Hello',
+      welcomeMsg: 'Your account has been created successfully!',
+      servicesIntro: 'Now you can access all our professional drone services:',
+      fumigationDesc: 'Precise application of phytosanitary products',
+      mappingDesc: 'High-resolution aerial cartography',
+      paintingDesc: 'Coatings on hard-to-reach structures',
+      rentalDesc: 'Professional equipment for your projects',
+      howTo: 'To request a service, simply log in to our platform and click on "Request Service".',
+      button: 'Go to Platform',
+      questions: 'If you have any questions, feel free to contact us.',
+      footer: 'Thank you for joining our platform.'
+    },
+    serviceRequest: {
+      subject: 'Service Request Received',
+      title: 'Service Request Received',
+      greeting: 'Hello',
+      received: 'We have received your service request. Here are the details:',
+      service: 'Service',
+      scheduledDate: 'Scheduled date',
+      time: 'Time',
+      location: 'Location',
+      area: 'Area',
+      hectares: 'hectares',
+      status: 'Status',
+      pending: 'Pending confirmation',
+      willContact: 'Our team will review your request and contact you soon to confirm the details.',
+      questions: 'If you have any questions, you can reply to this email or contact us directly.',
+      footer: 'We will notify you when your request is confirmed.'
+    },
+    statusChange: {
+      subject: 'Request Update',
+      title: 'Request Update',
+      greeting: 'Hello',
+      updated: 'The status of your service request has been updated:',
+      service: 'Service',
+      date: 'Date',
+      location: 'Location',
+      questions: 'If you have any questions, you can reply to this email or contact us directly.',
+      messages: {
+        confirmed: 'Your request has been confirmed! Our team will be at the indicated location on the scheduled date.',
+        in_progress: 'Our team is working on your service. We will keep you informed of the progress.',
+        completed: 'The service has been completed successfully! Thank you for trusting Drone Service.',
+        cancelled: 'Your request has been cancelled. If you have questions, feel free to contact us.'
+      }
+    },
+    footer: {
+      autoEmail: 'This email was sent automatically by Drone Service.',
+      rights: 'All rights reserved'
+    }
+  },
+  pl: {
+    welcome: {
+      subject: 'Witamy w Drone Service!',
+      title: 'Witamy w Drone Service!',
+      greeting: 'Witaj',
+      welcomeMsg: 'Twoje konto zostało pomyślnie utworzone!',
+      servicesIntro: 'Teraz masz dostęp do wszystkich naszych profesjonalnych usług dronowych:',
+      fumigationDesc: 'Precyzyjne stosowanie środków fitosanitarnych',
+      mappingDesc: 'Kartografia lotnicza wysokiej rozdzielczości',
+      paintingDesc: 'Powłoki na trudno dostępnych konstrukcjach',
+      rentalDesc: 'Profesjonalny sprzęt do Twoich projektów',
+      howTo: 'Aby zamówić usługę, po prostu zaloguj się na naszą platformę i kliknij "Zamów usługę".',
+      button: 'Przejdź do Platformy',
+      questions: 'Jeśli masz pytania, skontaktuj się z nami.',
+      footer: 'Dziękujemy za dołączenie do naszej platformy.'
+    },
+    serviceRequest: {
+      subject: 'Otrzymano Zamówienie Usługi',
+      title: 'Otrzymano Zamówienie Usługi',
+      greeting: 'Witaj',
+      received: 'Otrzymaliśmy Twoje zamówienie usługi. Oto szczegóły:',
+      service: 'Usługa',
+      scheduledDate: 'Zaplanowana data',
+      time: 'Godzina',
+      location: 'Lokalizacja',
+      area: 'Powierzchnia',
+      hectares: 'hektarów',
+      status: 'Status',
+      pending: 'Oczekuje na potwierdzenie',
+      willContact: 'Nasz zespół przejrzy Twoje zamówienie i wkrótce skontaktuje się z Tobą w celu potwierdzenia szczegółów.',
+      questions: 'Jeśli masz pytania, możesz odpowiedzieć na ten email lub skontaktować się z nami bezpośrednio.',
+      footer: 'Powiadomimy Cię, gdy Twoje zamówienie zostanie potwierdzone.'
+    },
+    statusChange: {
+      subject: 'Aktualizacja Zamówienia',
+      title: 'Aktualizacja Zamówienia',
+      greeting: 'Witaj',
+      updated: 'Status Twojego zamówienia usługi został zaktualizowany:',
+      service: 'Usługa',
+      date: 'Data',
+      location: 'Lokalizacja',
+      questions: 'Jeśli masz pytania, możesz odpowiedzieć na ten email lub skontaktować się z nami bezpośrednio.',
+      messages: {
+        confirmed: 'Twoje zamówienie zostało potwierdzone! Nasz zespół będzie na wskazanej lokalizacji w zaplanowanym terminie.',
+        in_progress: 'Nasz zespół pracuje nad Twoją usługą. Będziemy Cię informować o postępach.',
+        completed: 'Usługa została pomyślnie zakończona! Dziękujemy za zaufanie Drone Service.',
+        cancelled: 'Twoje zamówienie zostało anulowane. Jeśli masz pytania, skontaktuj się z nami.'
+      }
+    },
+    footer: {
+      autoEmail: 'Ten email został wysłany automatycznie przez Drone Service.',
+      rights: 'Wszelkie prawa zastrzeżone'
+    }
+  },
+  cs: {
+    welcome: {
+      subject: 'Vítejte v Drone Service!',
+      title: 'Vítejte v Drone Service!',
+      greeting: 'Ahoj',
+      welcomeMsg: 'Váš účet byl úspěšně vytvořen!',
+      servicesIntro: 'Nyní máte přístup ke všem našim profesionálním dronovým službám:',
+      fumigationDesc: 'Přesná aplikace fytosanitárních přípravků',
+      mappingDesc: 'Letecká kartografie ve vysokém rozlišení',
+      paintingDesc: 'Nátěry na těžko přístupných konstrukcích',
+      rentalDesc: 'Profesionální vybavení pro vaše projekty',
+      howTo: 'Pro objednání služby se jednoduše přihlaste na naši platformu a klikněte na "Objednat službu".',
+      button: 'Přejít na Platformu',
+      questions: 'Pokud máte dotazy, neváhejte nás kontaktovat.',
+      footer: 'Děkujeme za připojení k naší platformě.'
+    },
+    serviceRequest: {
+      subject: 'Objednávka Služby Přijata',
+      title: 'Objednávka Služby Přijata',
+      greeting: 'Ahoj',
+      received: 'Přijali jsme vaši objednávku služby. Zde jsou podrobnosti:',
+      service: 'Služba',
+      scheduledDate: 'Naplánované datum',
+      time: 'Čas',
+      location: 'Místo',
+      area: 'Plocha',
+      hectares: 'hektarů',
+      status: 'Stav',
+      pending: 'Čeká na potvrzení',
+      willContact: 'Náš tým zkontroluje vaši objednávku a brzy vás kontaktuje pro potvrzení detailů.',
+      questions: 'Pokud máte dotazy, můžete odpovědět na tento email nebo nás kontaktovat přímo.',
+      footer: 'Budeme vás informovat, až bude vaše objednávka potvrzena.'
+    },
+    statusChange: {
+      subject: 'Aktualizace Objednávky',
+      title: 'Aktualizace Objednávky',
+      greeting: 'Ahoj',
+      updated: 'Stav vaší objednávky služby byl aktualizován:',
+      service: 'Služba',
+      date: 'Datum',
+      location: 'Místo',
+      questions: 'Pokud máte dotazy, můžete odpovědět na tento email nebo nás kontaktovat přímo.',
+      messages: {
+        confirmed: 'Vaše objednávka byla potvrzena! Náš tým bude na uvedeném místě v naplánovaném termínu.',
+        in_progress: 'Náš tým pracuje na vaší službě. Budeme vás informovat o průběhu.',
+        completed: 'Služba byla úspěšně dokončena! Děkujeme za důvěru v Drone Service.',
+        cancelled: 'Vaše objednávka byla zrušena. Pokud máte dotazy, neváhejte nás kontaktovat.'
+      }
+    },
+    footer: {
+      autoEmail: 'Tento email byl automaticky odeslán Drone Service.',
+      rights: 'Všechna práva vyhrazena'
+    }
+  },
+  sk: {
+    welcome: {
+      subject: 'Vitajte v Drone Service!',
+      title: 'Vitajte v Drone Service!',
+      greeting: 'Ahoj',
+      welcomeMsg: 'Váš účet bol úspešne vytvorený!',
+      servicesIntro: 'Teraz máte prístup ku všetkým našim profesionálnym dronovým službám:',
+      fumigationDesc: 'Presná aplikácia fytosanitárnych prípravkov',
+      mappingDesc: 'Letecká kartografia vo vysokom rozlíšení',
+      paintingDesc: 'Nátery na ťažko prístupných konštrukciách',
+      rentalDesc: 'Profesionálne vybavenie pre vaše projekty',
+      howTo: 'Pre objednanie služby sa jednoducho prihláste na našu platformu a kliknite na "Objednať službu".',
+      button: 'Prejsť na Platformu',
+      questions: 'Ak máte otázky, neváhajte nás kontaktovať.',
+      footer: 'Ďakujeme za pripojenie k našej platforme.'
+    },
+    serviceRequest: {
+      subject: 'Objednávka Služby Prijatá',
+      title: 'Objednávka Služby Prijatá',
+      greeting: 'Ahoj',
+      received: 'Prijali sme vašu objednávku služby. Tu sú podrobnosti:',
+      service: 'Služba',
+      scheduledDate: 'Naplánovaný dátum',
+      time: 'Čas',
+      location: 'Miesto',
+      area: 'Plocha',
+      hectares: 'hektárov',
+      status: 'Stav',
+      pending: 'Čaká na potvrdenie',
+      willContact: 'Náš tím skontroluje vašu objednávku a čoskoro vás kontaktuje pre potvrdenie detailov.',
+      questions: 'Ak máte otázky, môžete odpovedať na tento email alebo nás kontaktovať priamo.',
+      footer: 'Budeme vás informovať, keď bude vaša objednávka potvrdená.'
+    },
+    statusChange: {
+      subject: 'Aktualizácia Objednávky',
+      title: 'Aktualizácia Objednávky',
+      greeting: 'Ahoj',
+      updated: 'Stav vašej objednávky služby bol aktualizovaný:',
+      service: 'Služba',
+      date: 'Dátum',
+      location: 'Miesto',
+      questions: 'Ak máte otázky, môžete odpovedať na tento email alebo nás kontaktovať priamo.',
+      messages: {
+        confirmed: 'Vaša objednávka bola potvrdená! Náš tím bude na uvedenom mieste v naplánovanom termíne.',
+        in_progress: 'Náš tím pracuje na vašej službe. Budeme vás informovať o priebehu.',
+        completed: 'Služba bola úspešne dokončená! Ďakujeme za dôveru v Drone Service.',
+        cancelled: 'Vaša objednávka bola zrušená. Ak máte otázky, neváhajte nás kontaktovať.'
+      }
+    },
+    footer: {
+      autoEmail: 'Tento email bol automaticky odoslaný Drone Service.',
+      rights: 'Všetky práva vyhradené'
+    }
+  }
+};
+
+// Get language helper
+function getLang(lang) {
+  return EMAIL_TEXTS[lang] || EMAIL_TEXTS['es'];
+}
+
+function getServiceName(service, lang) {
+  const names = SERVICE_NAMES[lang] || SERVICE_NAMES['es'];
+  return names[service] || service;
+}
+
+function getStatusName(status, lang) {
+  const names = STATUS_NAMES[lang] || STATUS_NAMES['es'];
+  return names[status] || status;
+}
+
+// Base email template - Light theme
+function getEmailTemplate(title, content, lang = 'es', footerText = '') {
+  const texts = getLang(lang);
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">🚁 Drone Service</h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Professional Drone Services</p>
+            </td>
+          </tr>
+
+          <!-- Title -->
+          <tr>
+            <td style="padding: 30px 30px 10px; background-color: #ffffff;">
+              <h2 style="margin: 0; color: #059669; font-size: 22px; font-weight: 600;">${title}</h2>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 10px 30px 30px; background-color: #ffffff;">
+              ${content}
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 20px 30px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #6b7280; font-size: 12px; text-align: center;">
+                ${footerText || texts.footer.autoEmail}
+              </p>
+              <p style="margin: 10px 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
+                © ${new Date().getFullYear()} Drone Service - ${texts.footer.rights}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+}
+
+// Welcome email for new users
+function getWelcomeEmailTemplate(userName, lang = 'es') {
+  const texts = getLang(lang).welcome;
+  const serviceNames = SERVICE_NAMES[lang] || SERVICE_NAMES['es'];
+
+  const content = `
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.greeting} <strong style="color: #111827;">${userName || 'Usuario'}</strong>,
+    </p>
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.welcomeMsg}
+    </p>
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.servicesIntro}
+    </p>
+    <ul style="color: #374151; font-size: 15px; line-height: 1.8; margin: 0 0 20px; padding-left: 20px;">
+      <li>🌾 <strong>${serviceNames['fumigation']}</strong> - ${texts.fumigationDesc}</li>
+      <li>📍 <strong>${serviceNames['mapping']}</strong> - ${texts.mappingDesc}</li>
+      <li>🎨 <strong>${serviceNames['painting']}</strong> - ${texts.paintingDesc}</li>
+      <li>🚁 <strong>${serviceNames['rental']}</strong> - ${texts.rentalDesc}</li>
+    </ul>
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.howTo}
+    </p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="https://cieniowanie.droneagri.pl" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 14px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+        ${texts.button}
+      </a>
+    </div>
+    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0;">
+      ${texts.questions}
+    </p>
+  `;
+  return getEmailTemplate(texts.title, content, lang, texts.footer);
+}
+
+// Admin notification for new registration
+function getAdminNewUserEmailTemplate(userEmail, userName) {
+  const content = `
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      Se ha registrado un nuevo usuario en la plataforma:
+    </p>
+    <div style="background-color: #ecfdf5; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #10b981;">
+      <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">Nombre:</p>
+      <p style="margin: 0 0 15px; color: #111827; font-size: 18px; font-weight: bold;">${userName || 'No especificado'}</p>
+      <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">Email:</p>
+      <p style="margin: 0; color: #059669; font-size: 18px; font-weight: bold;">${userEmail}</p>
+    </div>
+    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 20px 0 0;">
+      Fecha de registro: ${new Date().toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' })}
+    </p>
+  `;
+  return getEmailTemplate('🆕 Nuevo Usuario Registrado', content, 'es');
+}
+
+// Client notification for service request created - DJI Professional Style
+function getClientServiceRequestEmailTemplate(request, lang = 'es') {
+  const texts = getLang(lang).serviceRequest;
+  const serviceName = getServiceName(request.service, lang);
+
+  // Generate request number
+  const requestNumber = `#${Date.now().toString().slice(-8)}`;
+
+  // Multi-language texts for DJI style
+  const djiTexts = {
+    es: {
+      title: 'Solicitud de Servicio Recibida',
+      greeting: 'Estimado Cliente',
+      mainText: `Su solicitud de servicio ha sido recibida y su número de solicitud es <strong style="color: #111827;">${requestNumber}</strong>. Para brindarle un mejor servicio, nuestros representantes pueden <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">llamarle</a> para más información. Si le resulta conveniente, por favor atienda la llamada.`,
+      dashboardText: `Puede visitar su <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Panel de Control</a> para ver el progreso del servicio. Gracias por elegir Drone Service.`,
+      serviceDetails: 'Detalles del Servicio',
+      date: 'Fecha',
+      location: 'Ubicación',
+      flightHours: 'Horas de Vuelo',
+      damagedParts: 'Partes Dañadas',
+      autoMessage: 'Este es un mensaje automático. Las respuestas a este mensaje no serán monitoreadas.',
+      contactInfo: 'Si tiene alguna pregunta, no dude en contactar al Soporte de Drone Service a través de los siguientes canales:',
+      phone: 'Teléfono',
+      email: 'Email',
+      service: 'Servicio',
+      regards: 'Saludos cordiales',
+      supportTeam: 'Soporte Drone Service'
+    },
+    en: {
+      title: 'Service Request Received',
+      greeting: 'Dear Customer',
+      mainText: `Your service request has been received and your request number is <strong style="color: #111827;">${requestNumber}</strong>. To provide you with better service, our representatives may <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">call you</a> for further communication. If convenient, please kindly answer the call.`,
+      dashboardText: `You can visit your <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Dashboard</a> to view the service progress. Thank you for choosing Drone Service.`,
+      serviceDetails: 'Service Details',
+      date: 'Date',
+      location: 'Location',
+      flightHours: 'Flight Hours',
+      damagedParts: 'Damaged Parts',
+      autoMessage: 'This is an automated message. Any replies to this message will not be monitored.',
+      contactInfo: 'If you have any questions, please feel free to contact Drone Service Support via the following channels:',
+      phone: 'Phone',
+      email: 'Email',
+      service: 'Service',
+      regards: 'Best Regards',
+      supportTeam: 'Drone Service Support'
+    },
+    pl: {
+      title: 'Otrzymano Zamówienie Usługi',
+      greeting: 'Szanowny Kliencie',
+      mainText: `Twoje zamówienie usługi zostało otrzymane, a Twój numer zamówienia to <strong style="color: #111827;">${requestNumber}</strong>. Aby zapewnić Ci lepszą obsługę, nasi przedstawiciele mogą <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">zadzwonić</a> w celu dalszej komunikacji. Jeśli to możliwe, prosimy o odebranie połączenia.`,
+      dashboardText: `Możesz odwiedzić swój <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Panel</a>, aby śledzić postęp usługi. Dziękujemy za wybór Drone Service.`,
+      serviceDetails: 'Szczegóły Usługi',
+      date: 'Data',
+      location: 'Lokalizacja',
+      flightHours: 'Godziny Lotu',
+      damagedParts: 'Uszkodzone Części',
+      autoMessage: 'To jest wiadomość automatyczna. Odpowiedzi na tę wiadomość nie będą monitorowane.',
+      contactInfo: 'Jeśli masz pytania, skontaktuj się z pomocą Drone Service przez następujące kanały:',
+      phone: 'Telefon',
+      email: 'Email',
+      service: 'Usługa',
+      regards: 'Z poważaniem',
+      supportTeam: 'Wsparcie Drone Service'
+    },
+    cs: {
+      title: 'Objednávka Služby Přijata',
+      greeting: 'Vážený zákazníku',
+      mainText: `Vaše žádost o službu byla přijata a vaše číslo objednávky je <strong style="color: #111827;">${requestNumber}</strong>. Pro lepší služby vám naši zástupci mohou <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">zavolat</a>. Prosíme, přijměte hovor.`,
+      dashboardText: `Můžete navštívit svůj <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Panel</a> pro sledování průběhu služby. Děkujeme za výběr Drone Service.`,
+      serviceDetails: 'Podrobnosti Služby',
+      date: 'Datum',
+      location: 'Místo',
+      flightHours: 'Letové Hodiny',
+      damagedParts: 'Poškozené Díly',
+      autoMessage: 'Toto je automatická zpráva. Odpovědi na tuto zprávu nebudou sledovány.',
+      contactInfo: 'Máte-li dotazy, kontaktujte podporu Drone Service prostřednictvím následujících kanálů:',
+      phone: 'Telefon',
+      email: 'Email',
+      service: 'Služba',
+      regards: 'S pozdravem',
+      supportTeam: 'Podpora Drone Service'
+    },
+    sk: {
+      title: 'Objednávka Služby Prijatá',
+      greeting: 'Vážený zákazník',
+      mainText: `Vaša žiadosť o službu bola prijatá a vaše číslo objednávky je <strong style="color: #111827;">${requestNumber}</strong>. Pre lepšie služby vám naši zástupcovia môžu <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">zavolať</a>. Prosíme, prijmite hovor.`,
+      dashboardText: `Môžete navštíviť svoj <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Panel</a> pre sledovanie priebehu služby. Ďakujeme za výber Drone Service.`,
+      serviceDetails: 'Podrobnosti Služby',
+      date: 'Dátum',
+      location: 'Miesto',
+      flightHours: 'Letové Hodiny',
+      damagedParts: 'Poškodené Diely',
+      autoMessage: 'Toto je automatická správa. Odpovede na túto správu nebudú sledované.',
+      contactInfo: 'Ak máte otázky, kontaktujte podporu Drone Service prostredníctvom nasledujúcich kanálov:',
+      phone: 'Telefón',
+      email: 'Email',
+      service: 'Služba',
+      regards: 'S pozdravom',
+      supportTeam: 'Podpora Drone Service'
+    },
+    bg: {
+      title: 'Заявката за услуга е получена',
+      greeting: 'Уважаеми клиенте',
+      mainText: `Вашата заявка за услуга е получена и номерът на вашата заявка е <strong style="color: #111827;">${requestNumber}</strong>. За да ви предоставим по-добро обслужване, наши представители може да ви <a href="tel:+48696350197" style="color: #0ea5e9; text-decoration: none;">се обадят</a>. Моля, отговорете на обаждането.`,
+      dashboardText: `Можете да посетите своя <a href="https://cieniowanie.droneagri.pl/dashboard" style="color: #0ea5e9; text-decoration: none;">Панел</a>, за да видите напредъка на услугата. Благодарим ви, че избрахте Drone Service.`,
+      serviceDetails: 'Детайли на услугата',
+      date: 'Дата',
+      location: 'Местоположение',
+      flightHours: 'Часове на летене',
+      damagedParts: 'Повредени части',
+      autoMessage: 'Това е автоматично съобщение. Отговорите на това съобщение няма да бъдат наблюдавани.',
+      contactInfo: 'Ако имате въпроси, моля свържете се с поддръжката на Drone Service чрез следните канали:',
+      phone: 'Телефон',
+      email: 'Имейл',
+      service: 'Услуга',
+      regards: 'С уважение',
+      supportTeam: 'Поддръжка Drone Service'
+    }
+  };
+
+  const t = djiTexts[lang] || djiTexts['en'];
+
+  // Build extra details section
+  let extraDetails = '';
+  if (request.flightHours) {
+    extraDetails += `
+      <tr>
+        <td style="font-size: 13px; color: #64748b; padding: 4px 0;">${t.flightHours}: ${request.flightHours}</td>
+        ${request.damagedParts ? `<td style="font-size: 13px; color: #64748b; padding: 4px 0; text-align: right;">${t.damagedParts}: ${request.damagedParts}</td>` : '<td></td>'}
+      </tr>
+    `;
+  } else if (request.damagedParts) {
+    extraDetails += `
+      <tr>
+        <td style="font-size: 13px; color: #64748b; padding: 4px 0;">${t.damagedParts}: ${request.damagedParts}</td>
+        <td></td>
+      </tr>
+    `;
+  }
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff;">
+    <tr>
+      <td align="center">
+        <table width="700" cellpadding="0" cellspacing="0" style="background-color: #ffffff; padding: 50px 40px;">
+
+          <!-- Header Title -->
+          <tr>
+            <td style="text-align: right; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 500; color: #111827;">${t.title}</h1>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding: 30px 0 20px;">
+              <p style="margin: 0; font-size: 15px; color: #374151;">${t.greeting},</p>
+            </td>
+          </tr>
+
+          <!-- Main Text -->
+          <tr>
+            <td style="padding-bottom: 30px;">
+              <p style="margin: 0 0 15px; font-size: 15px; color: #374151; line-height: 1.7;">
+                ${t.mainText}
+              </p>
+              <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.7;">
+                ${t.dashboardText}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Service Details Box -->
+          <tr>
+            <td style="padding-bottom: 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-left: 4px solid #0ea5e9;">
+                <tr>
+                  <td style="padding: 15px 20px;">
+                    <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #475569;">${t.serviceDetails}</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 8px 0;">
+                          <p style="margin: 0; font-size: 15px; font-weight: 600; color: #111827;">${serviceName}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="font-size: 13px; color: #64748b; padding: 4px 0;">${t.date}: ${request.scheduledDate} ${request.scheduledTime}</td>
+                              <td style="font-size: 13px; color: #64748b; padding: 4px 0; text-align: right;">${t.location}: ${request.location}</td>
+                            </tr>
+                            ${extraDetails}
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Automated Message Notice -->
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <p style="margin: 0 0 15px; font-size: 13px; color: #6b7280;">${t.autoMessage}</p>
+              <p style="margin: 0; font-size: 13px; color: #6b7280;">${t.contactInfo}</p>
+            </td>
+          </tr>
+
+          <!-- Contact Info -->
+          <tr>
+            <td style="padding-bottom: 30px;">
+              <p style="margin: 0 0 5px; font-size: 13px; color: #374151;"><strong>${t.phone}:</strong></p>
+              <p style="margin: 0 0 3px; font-size: 13px; color: #6b7280;">${t.service}: +48 696 350 197 &nbsp;&nbsp; 9:00-18:00 (CET) Mon-Fri</p>
+              <p style="margin: 15px 0 5px; font-size: 13px; color: #374151;"><strong>${t.email}:</strong></p>
+              <p style="margin: 0; font-size: 13px;"><a href="mailto:admin@drone-partss.com" style="color: #0ea5e9; text-decoration: none;">admin@drone-partss.com</a></p>
+            </td>
+          </tr>
+
+          <!-- Signature -->
+          <tr>
+            <td style="padding-top: 10px;">
+              <p style="margin: 0 0 5px; font-size: 14px; color: #374151;">${t.regards},</p>
+              <p style="margin: 0; font-size: 14px; font-weight: 600; color: #111827;">${t.supportTeam}</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+}
+
+// Admin notification for new service request - DJI Professional Style (Clean)
+function getAdminServiceRequestEmailTemplate(request) {
+  const serviceName = getServiceName(request.service, 'es');
+
+  // Generate request number
+  const requestNumber = `#${Date.now().toString().slice(-8)}`;
+
+  // Build extra details section
+  let extraDetails = '';
+  if (request.flightHours) {
+    extraDetails += `
+      <tr>
+        <td style="font-size: 13px; color: #64748b; padding: 4px 0;">Horas de Vuelo: ${request.flightHours}</td>
+        ${request.damagedParts ? `<td style="font-size: 13px; color: #64748b; padding: 4px 0; text-align: right;">Partes Dañadas: ${request.damagedParts}</td>` : '<td></td>'}
+      </tr>
+    `;
+  } else if (request.damagedParts) {
+    extraDetails += `
+      <tr>
+        <td style="font-size: 13px; color: #64748b; padding: 4px 0;">Partes Dañadas: ${request.damagedParts}</td>
+        <td></td>
+      </tr>
+    `;
+  }
+  if (request.area) {
+    extraDetails += `
+      <tr>
+        <td style="font-size: 13px; color: #64748b; padding: 4px 0;">Área: ${request.area} ha</td>
+        <td></td>
+      </tr>
+    `;
+  }
+  if (request.notes) {
+    extraDetails += `
+      <tr>
+        <td colspan="2" style="font-size: 13px; color: #64748b; padding: 4px 0;">Notas: ${request.notes}</td>
+      </tr>
+    `;
+  }
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff;">
+    <tr>
+      <td align="center">
+        <table width="700" cellpadding="0" cellspacing="0" style="background-color: #ffffff; padding: 50px 40px;">
+
+          <!-- Header Title -->
+          <tr>
+            <td style="text-align: right; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 500; color: #111827;">Nueva Solicitud de Servicio</h1>
+            </td>
+          </tr>
+
+          <!-- Request Number -->
+          <tr>
+            <td style="padding: 30px 0 20px;">
+              <p style="margin: 0; font-size: 15px; color: #374151;">
+                Nueva solicitud recibida. Número de solicitud: <strong style="color: #111827;">${requestNumber}</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Client Info Box -->
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-left: 4px solid #0ea5e9;">
+                <tr>
+                  <td style="padding: 15px 20px;">
+                    <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #475569;">Información del Cliente</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="font-size: 13px; color: #374151; padding: 4px 0;"><strong>Nombre:</strong> ${request.name}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 13px; color: #374151; padding: 4px 0;"><strong>Email:</strong> <a href="mailto:${request.email}" style="color: #0ea5e9; text-decoration: none;">${request.email}</a></td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 13px; color: #374151; padding: 4px 0;"><strong>Teléfono:</strong> <a href="tel:${request.phone}" style="color: #0ea5e9; text-decoration: none;">${request.phone}</a></td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Service Details Box -->
+          <tr>
+            <td style="padding-bottom: 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-left: 4px solid #0ea5e9;">
+                <tr>
+                  <td style="padding: 15px 20px;">
+                    <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #475569;">Detalles del Servicio</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 8px 0;">
+                          <p style="margin: 0; font-size: 15px; font-weight: 600; color: #111827;">${serviceName}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="font-size: 13px; color: #64748b; padding: 4px 0;">Fecha: ${request.scheduledDate} ${request.scheduledTime}</td>
+                              <td style="font-size: 13px; color: #64748b; padding: 4px 0; text-align: right;">Ubicación: ${request.location}</td>
+                            </tr>
+                            ${extraDetails}
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Action Note -->
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <p style="margin: 0; font-size: 13px; color: #6b7280;">
+                Por favor, revisa esta solicitud y contacta al cliente para confirmar los detalles del servicio.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Signature -->
+          <tr>
+            <td style="padding-top: 10px;">
+              <p style="margin: 0 0 5px; font-size: 14px; color: #374151;">Saludos,</p>
+              <p style="margin: 0; font-size: 14px; font-weight: 600; color: #111827;">Sistema Drone Service</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+}
+
+// Client notification for status change
+function getClientStatusChangeEmailTemplate(request, newStatus, lang = 'es') {
+  const texts = getLang(lang).statusChange;
+  const serviceName = getServiceName(request.service, lang);
+  const statusName = getStatusName(newStatus, lang);
+
+  const statusConfig = {
+    'confirmed': { color: '#059669', bgColor: '#ecfdf5', icon: '✅' },
+    'in_progress': { color: '#2563eb', bgColor: '#eff6ff', icon: '🔄' },
+    'completed': { color: '#059669', bgColor: '#ecfdf5', icon: '🎉' },
+    'cancelled': { color: '#dc2626', bgColor: '#fef2f2', icon: '❌' }
+  };
+
+  const config = statusConfig[newStatus] || { color: '#d97706', bgColor: '#fef3c7', icon: '📋' };
+  const message = texts.messages[newStatus] || texts.updated;
+
+  const content = `
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.greeting} <strong style="color: #111827;">${request.name}</strong>,
+    </p>
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${texts.updated}
+    </p>
+    <div style="background-color: ${config.bgColor}; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+      <p style="margin: 0 0 10px; font-size: 40px;">${config.icon}</p>
+      <p style="margin: 0; color: ${config.color}; font-size: 24px; font-weight: bold;">${statusName}</p>
+    </div>
+    <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <table width="100%" cellpadding="5" cellspacing="0">
+        <tr>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.service}:</td>
+          <td style="color: #111827; font-size: 16px; font-weight: bold; padding-bottom: 10px;">${serviceName}</td>
+        </tr>
+        <tr>
+          <td style="color: #6b7280; font-size: 14px; padding-bottom: 10px;">${texts.date}:</td>
+          <td style="color: #111827; font-size: 16px; padding-bottom: 10px;">${request.scheduled_date} - ${request.scheduled_time}</td>
+        </tr>
+        <tr>
+          <td style="color: #6b7280; font-size: 14px;">${texts.location}:</td>
+          <td style="color: #111827; font-size: 16px;">${request.location}</td>
+        </tr>
+      </table>
+    </div>
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${message}
+    </p>
+    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0;">
+      ${texts.questions}
+    </p>
+  `;
+  return getEmailTemplate(`${config.icon} ${texts.title}`, content, lang);
+}
+
+// Password reset email template
+function getPasswordResetEmailTemplate(resetUrl, lang = 'es') {
+  const texts = {
+    es: {
+      title: 'Recuperar Contraseña',
+      greeting: 'Hola',
+      message: 'Hemos recibido una solicitud para restablecer tu contraseña. Haz clic en el botón de abajo para crear una nueva contraseña:',
+      button: 'Restablecer Contraseña',
+      expires: 'Este enlace expirará en 1 hora.',
+      ignore: 'Si no solicitaste este cambio, puedes ignorar este email. Tu contraseña no será modificada.',
+      footer: 'Este enlace es de un solo uso.'
+    },
+    en: {
+      title: 'Reset Password',
+      greeting: 'Hello',
+      message: 'We received a request to reset your password. Click the button below to create a new password:',
+      button: 'Reset Password',
+      expires: 'This link will expire in 1 hour.',
+      ignore: 'If you did not request this change, you can ignore this email. Your password will not be changed.',
+      footer: 'This is a single-use link.'
+    },
+    pl: {
+      title: 'Zresetuj Hasło',
+      greeting: 'Witaj',
+      message: 'Otrzymaliśmy prośbę o zresetowanie hasła. Kliknij poniższy przycisk, aby utworzyć nowe hasło:',
+      button: 'Zresetuj Hasło',
+      expires: 'Ten link wygaśnie za 1 godzinę.',
+      ignore: 'Jeśli nie prosiłeś o tę zmianę, możesz zignorować ten email. Twoje hasło nie zostanie zmienione.',
+      footer: 'To jest jednorazowy link.'
+    },
+    cs: {
+      title: 'Obnovit Heslo',
+      greeting: 'Ahoj',
+      message: 'Obdrželi jsme žádost o obnovení vašeho hesla. Klikněte na tlačítko níže pro vytvoření nového hesla:',
+      button: 'Obnovit Heslo',
+      expires: 'Tento odkaz vyprší za 1 hodinu.',
+      ignore: 'Pokud jste o tuto změnu nežádali, můžete tento email ignorovat. Vaše heslo nebude změněno.',
+      footer: 'Toto je jednorázový odkaz.'
+    },
+    sk: {
+      title: 'Obnoviť Heslo',
+      greeting: 'Ahoj',
+      message: 'Dostali sme žiadosť o obnovenie vášho hesla. Kliknite na tlačidlo nižšie pre vytvorenie nového hesla:',
+      button: 'Obnoviť Heslo',
+      expires: 'Tento odkaz vyprší za 1 hodinu.',
+      ignore: 'Ak ste o túto zmenu nežiadali, môžete tento email ignorovať. Vaše heslo nebude zmenené.',
+      footer: 'Toto je jednorazový odkaz.'
+    }
+  };
+
+  const t = texts[lang] || texts['es'];
+
+  const content = `
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${t.greeting},
+    </p>
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+      ${t.message}
+    </p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 14px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+        ${t.button}
+      </a>
+    </div>
+    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0 0 10px;">
+      ${t.expires}
+    </p>
+    <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0;">
+      ${t.ignore}
+    </p>
+  `;
+  return getEmailTemplate(t.title, content, lang, t.footer);
+}
+
+// Send notification email (non-blocking)
+async function sendNotificationEmail(to, subject, htmlContent) {
+  if (!emailTransporter) {
+    console.log('Email not configured, skipping notification to:', to);
+    return;
+  }
+
+  try {
+    await emailTransporter.sendMail({
+      from: `"Drone Service" <${getFromEmail()}>`,
+      to: to,
+      subject: subject,
+      html: htmlContent
+    });
+    console.log('Notification email sent to:', to);
+  } catch (error) {
+    console.error('Failed to send notification email:', error.message);
+  }
+}
+
+// Allowed origins for CORS
+const allowedOrigins = [
+  'https://cieniowanie.droneagri.pl',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'capacitor://localhost', // iOS app
+  'ionic://localhost' // Ionic apps
+];
+
+// Trust proxy for rate limiting behind reverse proxy
+app.set('trust proxy', 1);
+
+// SECURITY: Helmet middleware for secure headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled for API
+  crossOriginEmbedderPolicy: false
+}));
+
+// SECURITY: Rate limiting
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: { error: 'Demasiadas solicitudes, intente de nuevo más tarde' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login attempts per windowMs
+  message: { error: 'Demasiados intentos de login, intente de nuevo en 15 minutos' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // Limit each IP to 3 password reset requests per hour
+  message: { error: 'Demasiadas solicitudes de recuperación, intente de nuevo más tarde' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Apply general rate limiting
+app.use(generalLimiter);
+
+// Middleware
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    // SECURITY: Reject unknown origins in production
+    console.warn('CORS blocked origin:', origin);
+    return callback(new Error('No permitido por CORS'), false);
+  },
+  credentials: true
+}));
+app.use(express.json({ limit: '10kb' })); // SECURITY: Limit body size
+
+// Database connection pool
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'panel_drones',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+// Database migration - add profile columns if not exist
+async function runMigrations() {
+  try {
+    // Add profile columns to users table
+    const profileColumns = [
+      { name: 'address', type: 'VARCHAR(255) DEFAULT NULL' },
+      { name: 'city', type: 'VARCHAR(100) DEFAULT NULL' },
+      { name: 'country', type: 'VARCHAR(100) DEFAULT NULL' },
+      { name: 'postal_code', type: 'VARCHAR(20) DEFAULT NULL' },
+      { name: 'company_name', type: 'VARCHAR(255) DEFAULT NULL' },
+      { name: 'tax_id', type: 'VARCHAR(50) DEFAULT NULL' },
+      { name: 'phone', type: 'VARCHAR(50) DEFAULT NULL' },
+      { name: 'language', type: "VARCHAR(10) DEFAULT 'es'" }
+    ];
+
+    for (const col of profileColumns) {
+      try {
+        await pool.execute(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
+        console.log(`Added column ${col.name} to users table`);
+      } catch (err) {
+        // Column likely already exists, ignore error
+        if (!err.message.includes('Duplicate column name')) {
+          console.log(`Column ${col.name} check: ${err.message}`);
+        }
+      }
+    }
+    console.log('Database migrations completed');
+  } catch (error) {
+    console.error('Migration error:', error);
+  }
+}
+
+// Run migrations on startup
+runMigrations();
+
+// Admin emails
+const ADMIN_EMAILS = ['admin@drone-partss.com'];
+
+const isAdminEmail = (email) => {
+  return ADMIN_EMAILS.includes(email?.toLowerCase());
+};
+
+// Auth middleware
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token requerido' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const [rows] = await pool.execute('SELECT id, email, role, name FROM users WHERE id = ?', [decoded.userId]);
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Usuario no encontrado' });
+    }
+
+    req.user = rows[0];
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: 'Token inválido' });
+  }
+};
+
+// Routes
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Welcome email subjects by language
+const WELCOME_EMAIL_SUBJECTS = {
+  es: '¡Bienvenido/a a Drone Service!',
+  en: 'Welcome to Drone Service!',
+  pl: 'Witamy w Drone Service!',
+  cs: 'Vítejte v Drone Service!',
+  sk: 'Vitajte v Drone Service!',
+  bg: 'Добре дошли в Drone Service!'
+};
+
+// Register
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, name, phone, language } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+    }
+
+    // Check if user exists
+    const [existing] = await pool.execute('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'El email ya está registrado' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const role = isAdminEmail(email) ? 'admin' : 'user';
+    const userLang = language || 'es';
+
+    // Insert user with language and phone
+    const [result] = await pool.execute(
+      'INSERT INTO users (email, password, role, name, phone, language) VALUES (?, ?, ?, ?, ?, ?)',
+      [email.toLowerCase(), hashedPassword, role, name || null, phone || null, userLang]
+    );
+
+    // Generate token
+    const token = jwt.sign({ userId: result.insertId }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Send welcome email to user in their language (non-blocking)
+    const welcomeSubject = WELCOME_EMAIL_SUBJECTS[userLang] || WELCOME_EMAIL_SUBJECTS['es'];
+    sendNotificationEmail(
+      email.toLowerCase(),
+      welcomeSubject,
+      getWelcomeEmailTemplate(name, userLang)
+    );
+
+    // Send notification to admin about new registration (non-blocking)
+    sendNotificationEmail(
+      ADMIN_EMAILS[0],
+      '🆕 Nuevo Usuario Registrado - Drone Service',
+      getAdminNewUserEmailTemplate(email.toLowerCase(), name)
+    );
+
+    res.status(201).json({
+      user: {
+        id: result.insertId,
+        email: email.toLowerCase(),
+        role,
+        name,
+        phone,
+        language: userLang
+      },
+      token
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({ error: 'Error al registrar usuario' });
+  }
+});
+
+// Login - with rate limiting
+app.post('/api/auth/login', authLimiter, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+    }
+
+    // Find user
+    const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const user = rows[0];
+
+    // Verify password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // Generate token
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name
+      },
+      token
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Error al iniciar sesión' });
+  }
+});
+
+// Get current user
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+  res.json({ user: req.user });
+});
+
+// Logout (client-side, just return success)
+app.post('/api/auth/logout', (req, res) => {
+  res.json({ success: true });
+});
+
+// Change own password
+app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Se requieren la contraseña actual y la nueva' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Get user with password
+    const [rows] = await pool.execute('SELECT password FROM users WHERE id = ?', [req.user.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Verify current password
+    const validPassword = await bcrypt.compare(currentPassword, rows[0].password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+    }
+
+    // Hash and update new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.user.id]);
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Error al cambiar la contraseña' });
+  }
+});
+
+// ==================== USER PROFILE ====================
+
+// Get user profile (full data)
+app.get('/api/profile', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT id, email, name, phone, language, address, city, country, postal_code,
+       company_name, tax_id, created_at
+       FROM users WHERE id = ?`,
+      [req.user.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({ profile: rows[0] });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ error: 'Error al obtener perfil' });
+  }
+});
+
+// Update user profile
+app.put('/api/profile', authenticateToken, async (req, res) => {
+  try {
+    const { name, phone, language, address, city, country, postal_code, company_name, tax_id } = req.body;
+
+    // Convert undefined to null for MySQL
+    const toNull = (val) => val === undefined ? null : val;
+
+    await pool.execute(
+      `UPDATE users SET
+        name = COALESCE(?, name),
+        phone = COALESCE(?, phone),
+        language = COALESCE(?, language),
+        address = COALESCE(?, address),
+        city = COALESCE(?, city),
+        country = COALESCE(?, country),
+        postal_code = COALESCE(?, postal_code),
+        company_name = COALESCE(?, company_name),
+        tax_id = COALESCE(?, tax_id)
+      WHERE id = ?`,
+      [toNull(name), toNull(phone), toNull(language), toNull(address), toNull(city), toNull(country), toNull(postal_code), toNull(company_name), toNull(tax_id), req.user.id]
+    );
+
+    // Get updated profile
+    const [rows] = await pool.execute(
+      `SELECT id, email, name, phone, language, address, city, country, postal_code,
+       company_name, tax_id, created_at
+       FROM users WHERE id = ?`,
+      [req.user.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Perfil actualizado correctamente',
+      profile: rows[0]
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Error al actualizar perfil' });
+  }
+});
+
+// Forgot password - send reset email (with rate limiting)
+app.post('/api/auth/forgot-password', passwordResetLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email requerido' });
+    }
+
+    // Find user
+    const [rows] = await pool.execute('SELECT id, email, language FROM users WHERE email = ?', [email.toLowerCase()]);
+
+    // Always return success to prevent email enumeration
+    if (rows.length === 0) {
+      return res.json({ success: true, message: 'Si el email existe, recibirás instrucciones para restablecer tu contraseña' });
+    }
+
+    const user = rows[0];
+    const lang = user.language || 'es';
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 3600000); // 1 hour
+
+    // Save token to database
+    await pool.execute(
+      'UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?',
+      [resetToken, resetExpires, user.id]
+    );
+
+    // Send reset email
+    const resetUrl = `https://cieniowanie.droneagri.pl/reset-password?token=${resetToken}`;
+
+    const subjectByLang = {
+      es: '🔐 Restablecer tu Contraseña - Drone Service',
+      en: '🔐 Reset Your Password - Drone Service',
+      pl: '🔐 Zresetuj Hasło - Drone Service',
+      cs: '🔐 Obnovit Heslo - Drone Service',
+      sk: '🔐 Obnoviť Heslo - Drone Service'
+    };
+
+    sendNotificationEmail(
+      user.email,
+      subjectByLang[lang] || subjectByLang['es'],
+      getPasswordResetEmailTemplate(resetUrl, lang)
+    );
+
+    res.json({ success: true, message: 'Si el email existe, recibirás instrucciones para restablecer tu contraseña' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Error al procesar la solicitud' });
+  }
+});
+
+// Reset password with token
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token y nueva contraseña son requeridos' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Find user with valid token
+    const [rows] = await pool.execute(
+      'SELECT id FROM users WHERE password_reset_token = ? AND password_reset_expires > NOW()',
+      [token]
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'Token inválido o expirado' });
+    }
+
+    const userId = rows[0].id;
+
+    // Hash and update password, clear reset token
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.execute(
+      'UPDATE users SET password = ?, password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?',
+      [hashedPassword, userId]
+    );
+
+    res.json({ success: true, message: 'Contraseña restablecida correctamente' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Error al restablecer la contraseña' });
+  }
+});
+
+// ==================== ADMIN USER MANAGEMENT ====================
+
+// Get all users (admin only)
+app.get('/api/admin/users', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const [rows] = await pool.execute(
+      'SELECT id, email, role, name, language, created_at FROM users ORDER BY created_at DESC'
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
+});
+
+// Admin create user
+app.post('/api/admin/users', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const { email, password, name } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Check if user exists
+    const [existing] = await pool.execute('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'El email ya está registrado' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const role = isAdminEmail(email) ? 'admin' : 'user';
+
+    // Insert user
+    const [result] = await pool.execute(
+      'INSERT INTO users (email, password, role, name) VALUES (?, ?, ?, ?)',
+      [email.toLowerCase(), hashedPassword, role, name || null]
+    );
+
+    // Send welcome email to user (non-blocking)
+    sendNotificationEmail(
+      email.toLowerCase(),
+      '🚁 ¡Bienvenido/a a Drone Service!',
+      getWelcomeEmailTemplate(name)
+    );
+
+    res.status(201).json({
+      success: true,
+      user: {
+        id: result.insertId,
+        email: email.toLowerCase(),
+        role,
+        name
+      },
+      message: 'Usuario creado exitosamente'
+    });
+  } catch (error) {
+    console.error('Admin create user error:', error);
+    res.status(500).json({ error: 'Error al crear usuario' });
+  }
+});
+
+// Admin delete user
+app.delete('/api/admin/users/:id', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const userId = req.params.id;
+
+    // Check if user exists
+    const [rows] = await pool.execute('SELECT id, email, role FROM users WHERE id = ?', [userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Prevent deleting admin accounts
+    if (rows[0].role === 'admin') {
+      return res.status(403).json({ error: 'No se puede eliminar una cuenta de administrador' });
+    }
+
+    // Delete user's service requests first (foreign key constraint)
+    await pool.execute('DELETE FROM service_requests WHERE user_id = ?', [userId]);
+
+    // Delete user
+    await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
+
+    res.json({ success: true, message: 'Usuario eliminado correctamente' });
+  } catch (error) {
+    console.error('Admin delete user error:', error);
+    res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+});
+
+// Admin send password reset email
+app.post('/api/admin/users/:id/send-reset', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const userId = req.params.id;
+
+    // Get user
+    const [rows] = await pool.execute('SELECT id, email, language FROM users WHERE id = ?', [userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const user = rows[0];
+    const lang = user.language || 'es';
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 3600000); // 1 hour
+
+    // Save token to database
+    await pool.execute(
+      'UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?',
+      [resetToken, resetExpires, user.id]
+    );
+
+    // Send reset email
+    const resetUrl = `https://cieniowanie.droneagri.pl/reset-password?token=${resetToken}`;
+
+    const subjectByLang = {
+      es: '🔐 Restablecer tu Contraseña - Drone Service',
+      en: '🔐 Reset Your Password - Drone Service',
+      pl: '🔐 Zresetuj Hasło - Drone Service',
+      cs: '🔐 Obnovit Heslo - Drone Service',
+      sk: '🔐 Obnoviť Heslo - Drone Service'
+    };
+
+    await sendNotificationEmail(
+      user.email,
+      subjectByLang[lang] || subjectByLang['es'],
+      getPasswordResetEmailTemplate(resetUrl, lang)
+    );
+
+    res.json({ success: true, message: 'Email de recuperación enviado' });
+  } catch (error) {
+    console.error('Admin send reset error:', error);
+    res.status(500).json({ error: 'Error al enviar email de recuperación' });
+  }
+});
+
+// Admin change user password
+app.put('/api/admin/users/:id/password', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const { newPassword } = req.body;
+    const userId = req.params.id;
+
+    if (!newPassword) {
+      return res.status(400).json({ error: 'Nueva contraseña requerida' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Check if user exists
+    const [rows] = await pool.execute('SELECT id FROM users WHERE id = ?', [userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Hash and update password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error('Admin change password error:', error);
+    res.status(500).json({ error: 'Error al cambiar la contraseña' });
+  }
+});
+
+// ==================== GDPR ENDPOINTS ====================
+// Compliance with EU General Data Protection Regulation
+
+// GDPR Article 20: Data Portability - Export user data
+app.get('/api/gdpr/export', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get user data
+    const [userData] = await pool.execute(
+      'SELECT id, email, name, language, created_at FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (userData.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Get user's service requests
+    const [serviceRequests] = await pool.execute(
+      'SELECT id, service, scheduled_date, scheduled_time, name, email, phone, location, area, notes, status, created_at FROM service_requests WHERE user_id = ?',
+      [userId]
+    );
+
+    // Prepare data export
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      gdprInfo: {
+        regulation: 'EU General Data Protection Regulation (GDPR)',
+        article: 'Article 20 - Right to data portability',
+        dataController: 'Drone Service, Ul. Smolna 14, 44-200 Rybnik, Poland',
+        contact: 'admin@drone-partss.com'
+      },
+      personalData: {
+        id: userData[0].id,
+        email: userData[0].email,
+        name: userData[0].name,
+        preferredLanguage: userData[0].language,
+        accountCreated: userData[0].created_at
+      },
+      serviceRequests: serviceRequests.map(sr => ({
+        id: sr.id,
+        service: sr.service,
+        scheduledDate: sr.scheduled_date,
+        scheduledTime: sr.scheduled_time,
+        contactName: sr.name,
+        contactEmail: sr.email,
+        contactPhone: sr.phone,
+        location: sr.location,
+        area: sr.area,
+        notes: sr.notes,
+        status: sr.status,
+        createdAt: sr.created_at
+      }))
+    };
+
+    // Set headers for JSON download
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="drone-service-data-export-${userId}-${Date.now()}.json"`);
+    res.json(exportData);
+  } catch (error) {
+    console.error('GDPR export error:', error);
+    res.status(500).json({ error: 'Error al exportar datos' });
+  }
+});
+
+// GDPR Article 17: Right to Erasure - Delete user account
+app.delete('/api/gdpr/delete-account', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { password, confirmDelete } = req.body;
+
+    // Require explicit confirmation
+    if (confirmDelete !== 'DELETE_MY_ACCOUNT') {
+      return res.status(400).json({
+        error: 'Debe confirmar la eliminación enviando confirmDelete: "DELETE_MY_ACCOUNT"'
+      });
+    }
+
+    // Verify password for security
+    const [userData] = await pool.execute('SELECT password, role FROM users WHERE id = ?', [userId]);
+
+    if (userData.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Prevent admin from deleting their own account
+    if (userData[0].role === 'admin') {
+      return res.status(403).json({ error: 'Los administradores no pueden eliminar su propia cuenta' });
+    }
+
+    // Verify password
+    const validPassword = await bcrypt.compare(password, userData[0].password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+
+    // Delete user's service requests first (foreign key constraint)
+    await pool.execute('DELETE FROM service_requests WHERE user_id = ?', [userId]);
+
+    // Delete user account
+    await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
+
+    res.json({
+      success: true,
+      message: 'Cuenta eliminada correctamente según el Artículo 17 del RGPD (Derecho al olvido)',
+      gdprInfo: {
+        regulation: 'EU General Data Protection Regulation (GDPR)',
+        article: 'Article 17 - Right to erasure',
+        deletedData: ['Datos de usuario', 'Solicitudes de servicio']
+      }
+    });
+  } catch (error) {
+    console.error('GDPR delete account error:', error);
+    res.status(500).json({ error: 'Error al eliminar cuenta' });
+  }
+});
+
+// GDPR: Get user consent status
+app.get('/api/gdpr/consent', authenticateToken, async (req, res) => {
+  try {
+    const [userData] = await pool.execute(
+      'SELECT privacy_consent, privacy_consent_date, marketing_consent, marketing_consent_date FROM users WHERE id = ?',
+      [req.user.id]
+    );
+
+    if (userData.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({
+      privacyConsent: userData[0].privacy_consent || false,
+      privacyConsentDate: userData[0].privacy_consent_date,
+      marketingConsent: userData[0].marketing_consent || false,
+      marketingConsentDate: userData[0].marketing_consent_date
+    });
+  } catch (error) {
+    console.error('Get consent error:', error);
+    res.status(500).json({ error: 'Error al obtener estado de consentimiento' });
+  }
+});
+
+// GDPR: Update consent preferences
+app.put('/api/gdpr/consent', authenticateToken, async (req, res) => {
+  try {
+    const { marketingConsent } = req.body;
+    const now = new Date();
+
+    await pool.execute(
+      'UPDATE users SET marketing_consent = ?, marketing_consent_date = ? WHERE id = ?',
+      [marketingConsent ? 1 : 0, now, req.user.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Preferencias de consentimiento actualizadas',
+      marketingConsent,
+      updatedAt: now.toISOString()
+    });
+  } catch (error) {
+    console.error('Update consent error:', error);
+    res.status(500).json({ error: 'Error al actualizar consentimiento' });
+  }
+});
+
+// ==================== CONFIG ENDPOINTS ====================
+// SECURITY: All config endpoints require admin authentication
+
+// Get current config (without secrets)
+app.get('/api/config', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  res.json({
+    vonage: {
+      apiKey: config.vonage?.apiKey ? config.vonage.apiKey.substring(0, 4) + '****' : '',
+      fromNumber: config.vonage?.fromNumber || 'Drone Service'
+    },
+    smtp: {
+      host: config.smtp?.host || 'smtp.gmail.com',
+      port: config.smtp?.port || '587',
+      user: config.smtp?.user || '',
+      fromEmail: config.smtp?.fromEmail || ''
+    },
+    status: {
+      vonage: !!(config.vonage?.apiKey && config.vonage?.apiSecret),
+      smtp: !!(config.smtp?.user && config.smtp?.pass)
+    }
+  });
+});
+
+// Update Vonage config (admin only)
+app.post('/api/config/vonage', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  const { apiKey, apiSecret, fromNumber } = req.body;
+
+  // Initialize vonage config if it doesn't exist
+  if (!config.vonage) {
+    config.vonage = {};
+  }
+
+  // Only update apiKey if provided and not a masked value
+  if (apiKey && !apiKey.includes('****')) {
+    config.vonage.apiKey = apiKey;
+  }
+
+  // Only update apiSecret if provided (not empty)
+  if (apiSecret && apiSecret.trim() !== '') {
+    config.vonage.apiSecret = apiSecret;
+  }
+
+  // Always update fromNumber if provided
+  if (fromNumber) {
+    config.vonage.fromNumber = fromNumber;
+  }
+
+  // Check if we have valid credentials
+  if (!config.vonage.apiKey || !config.vonage.apiSecret) {
+    return res.status(400).json({ error: 'API Key and API Secret are required' });
+  }
+
+  saveConfig(config);
+  vonage = createVonageClient();
+
+  console.log('Vonage configuration updated');
+  res.json({ success: true, message: 'Vonage configuration saved' });
+});
+
+// Update SMTP config (admin only)
+app.post('/api/config/smtp', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  const { host, port, user, pass, fromEmail } = req.body;
+
+  // Initialize smtp config if it doesn't exist
+  if (!config.smtp) {
+    config.smtp = {};
+  }
+
+  // Update host and port if provided
+  if (host) {
+    config.smtp.host = host;
+  }
+  if (port) {
+    config.smtp.port = port;
+  }
+
+  // Only update user if provided
+  if (user && user.trim() !== '') {
+    config.smtp.user = user;
+  }
+
+  // Only update password if provided (not empty)
+  if (pass && pass.trim() !== '') {
+    config.smtp.pass = pass;
+  }
+
+  // Update fromEmail if provided
+  if (fromEmail) {
+    config.smtp.fromEmail = fromEmail;
+  }
+
+  // Check if we have valid credentials
+  if (!config.smtp.user || !config.smtp.pass) {
+    return res.status(400).json({ error: 'SMTP user and password are required' });
+  }
+
+  saveConfig(config);
+  emailTransporter = createEmailTransporter();
+
+  console.log('SMTP configuration updated');
+  res.json({ success: true, message: 'SMTP configuration saved' });
+});
+
+// Test Vonage connection (admin only)
+app.post('/api/config/test-vonage', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  if (!vonage) {
+    return res.status(400).json({ error: 'Vonage not configured' });
+  }
+
+  try {
+    const response = await fetch(`https://rest.nexmo.com/account/get-balance?api_key=${config.vonage.apiKey}&api_secret=${config.vonage.apiSecret}`);
+    const data = await response.json();
+
+    if (data.value !== undefined) {
+      res.json({ success: true, balance: data.value });
+    } else {
+      res.status(400).json({ error: 'Invalid credentials' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Test SMTP connection (admin only)
+app.post('/api/config/test-smtp', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  if (!emailTransporter) {
+    return res.status(400).json({ error: 'SMTP not configured' });
+  }
+
+  try {
+    await emailTransporter.verify();
+    res.json({ success: true, message: 'SMTP connection successful' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== SERVICE REQUESTS ====================
+
+// SMS templates by language
+const SMS_TEMPLATES = {
+  es: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Su solicitud ${requestNumber} para ${serviceName} el ${date} a las ${time} ha sido recibida. Le contactaremos pronto.`,
+  en: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Your request ${requestNumber} for ${serviceName} on ${date} at ${time} has been received. We will contact you soon.`,
+  pl: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Twoje zamówienie ${requestNumber} na ${serviceName} dnia ${date} o ${time} zostało przyjęte. Wkrótce się skontaktujemy.`,
+  cs: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Vaše objednávka ${requestNumber} na ${serviceName} dne ${date} v ${time} byla přijata. Brzy vás kontaktujeme.`,
+  sk: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Vaša objednávka ${requestNumber} na ${serviceName} dňa ${date} o ${time} bola prijatá. Čoskoro vás kontaktujeme.`,
+  bg: (serviceName, date, time, requestNumber) =>
+    `Drone Service: Вашата заявка ${requestNumber} за ${serviceName} на ${date} в ${time} е получена. Ще се свържем с вас скоро.`
+};
+
+// Email subjects by language
+const EMAIL_SUBJECTS = {
+  es: 'Solicitud de Servicio Recibida - Drone Service',
+  en: 'Service Request Received - Drone Service',
+  pl: 'Otrzymano Zamówienie Usługi - Drone Service',
+  cs: 'Objednávka Služby Přijata - Drone Service',
+  sk: 'Objednávka Služby Prijatá - Drone Service',
+  bg: 'Заявката за услуга е получена - Drone Service'
+};
+
+// Send SMS notification (non-blocking)
+async function sendSmsNotification(to, message) {
+  if (!vonage) {
+    console.log('SMS not configured, skipping notification to:', to);
+    return;
+  }
+
+  try {
+    const cleanPhone = to.replace(/[^\d+]/g, '');
+    const response = await vonage.sms.send({
+      to: cleanPhone,
+      from: getFromNumber(),
+      text: message
+    });
+    console.log('SMS notification sent to:', to);
+  } catch (error) {
+    console.error('Failed to send SMS notification:', error.message);
+  }
+}
+
+// Create service request (requires auth)
+app.post('/api/service-requests', authenticateToken, async (req, res) => {
+  try {
+    const { service, scheduledDate, scheduledTime, name, email, phone, location, area, notes, flightHours, damagedParts } = req.body;
+
+    if (!service || !scheduledDate || !scheduledTime || !name || !email || !phone || !location) {
+      return res.status(400).json({ error: 'Todos los campos requeridos deben completarse' });
+    }
+
+    // Get user's language preference
+    const [userRows] = await pool.execute('SELECT language FROM users WHERE id = ?', [req.user.id]);
+    const userLang = userRows[0]?.language || 'es';
+
+    const [result] = await pool.execute(
+      `INSERT INTO service_requests (user_id, service, scheduled_date, scheduled_time, name, email, phone, location, area, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [req.user.id, service, scheduledDate, scheduledTime, name, email, phone, location, area || null, notes || null]
+    );
+
+    // Generate request number
+    const requestNumber = `#${Date.now().toString().slice(-8)}`;
+
+    // Prepare request data for emails
+    const requestData = {
+      service,
+      scheduledDate,
+      scheduledTime,
+      name,
+      email,
+      phone,
+      location,
+      area,
+      notes,
+      flightHours,
+      damagedParts
+    };
+
+    // Get service name in user's language
+    const serviceName = getServiceName(service, userLang);
+
+    // Send confirmation email to client in their language (non-blocking)
+    const emailSubject = EMAIL_SUBJECTS[userLang] || EMAIL_SUBJECTS['es'];
+    sendNotificationEmail(
+      email,
+      emailSubject,
+      getClientServiceRequestEmailTemplate(requestData, userLang)
+    );
+
+    // Send SMS notification to client in their language (non-blocking)
+    const smsTemplate = SMS_TEMPLATES[userLang] || SMS_TEMPLATES['es'];
+    sendSmsNotification(
+      phone,
+      smsTemplate(serviceName, scheduledDate, scheduledTime, requestNumber)
+    );
+
+    // Send notification to admin (non-blocking)
+    sendNotificationEmail(
+      ADMIN_EMAILS[0],
+      `🆕 Nueva Solicitud: ${getServiceName(service, 'es')} - ${name}`,
+      getAdminServiceRequestEmailTemplate(requestData)
+    );
+
+    res.status(201).json({
+      id: result.insertId,
+      service,
+      scheduledDate,
+      scheduledTime,
+      name,
+      email,
+      phone,
+      location,
+      area,
+      notes,
+      status: 'pending',
+      message: 'Solicitud creada exitosamente'
+    });
+  } catch (error) {
+    console.error('Create service request error:', error);
+    res.status(500).json({ error: 'Error al crear la solicitud' });
+  }
+});
+
+// Get user's service requests (requires auth)
+app.get('/api/service-requests', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT * FROM service_requests WHERE user_id = ? ORDER BY created_at DESC',
+      [req.user.id]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Get service requests error:', error);
+    res.status(500).json({ error: 'Error al obtener solicitudes' });
+  }
+});
+
+// Get all service requests (admin only)
+app.get('/api/admin/service-requests', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const [rows] = await pool.execute(
+      `SELECT sr.*, u.email as user_email
+       FROM service_requests sr
+       LEFT JOIN users u ON sr.user_id = u.id
+       ORDER BY sr.created_at DESC`
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Get all service requests error:', error);
+    res.status(500).json({ error: 'Error al obtener solicitudes' });
+  }
+});
+
+// Update service request status (admin only)
+app.put('/api/admin/service-requests/:id/status', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const { status } = req.body;
+    const validStatuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Estado inválido' });
+    }
+
+    // Get the service request details before updating
+    const [requests] = await pool.execute(
+      'SELECT * FROM service_requests WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (requests.length === 0) {
+      return res.status(404).json({ error: 'Solicitud no encontrada' });
+    }
+
+    const request = requests[0];
+
+    // Update the status
+    await pool.execute(
+      'UPDATE service_requests SET status = ? WHERE id = ?',
+      [status, req.params.id]
+    );
+
+    // Send status change notification to client (non-blocking)
+    // Don't send for 'pending' status as it's the initial state
+    if (status !== 'pending' && request.email) {
+      const statusEmoji = {
+        'confirmed': '✅',
+        'in_progress': '🔄',
+        'completed': '🎉',
+        'cancelled': '❌'
+      };
+
+      sendNotificationEmail(
+        request.email,
+        `${statusEmoji[status] || '📋'} Actualización de tu Solicitud - Drone Service`,
+        getClientStatusChangeEmailTemplate(request, status)
+      );
+    }
+
+    res.json({ success: true, message: 'Estado actualizado' });
+  } catch (error) {
+    console.error('Update status error:', error);
+    res.status(500).json({ error: 'Error al actualizar estado' });
+  }
+});
+
+// Delete service request (admin only)
+app.delete('/api/admin/service-requests/:id', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const [result] = await pool.execute(
+      'DELETE FROM service_requests WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Solicitud no encontrada' });
+    }
+
+    res.json({ success: true, message: 'Solicitud eliminada' });
+  } catch (error) {
+    console.error('Delete service request error:', error);
+    res.status(500).json({ error: 'Error al eliminar solicitud' });
+  }
+});
+
+// ==================== SMS SEND ====================
+
+// Send SMS (admin only)
+app.post('/api/sms/send', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  if (!vonage) {
+    return res.status(400).json({ error: 'Vonage not configured', success: false });
+  }
+
+  const { to, message } = req.body;
+
+  if (!to || !message) {
+    return res.status(400).json({ error: 'Phone number and message are required', success: false });
+  }
+
+  try {
+    // Clean the phone number (remove spaces, keep + and digits)
+    const cleanPhone = to.replace(/[^\d+]/g, '');
+
+    const response = await vonage.sms.send({
+      to: cleanPhone,
+      from: getFromNumber(),
+      text: message
+    });
+
+    console.log('SMS sent:', response);
+
+    if (response.messages && response.messages[0].status === '0') {
+      res.json({ success: true, messageId: response.messages[0]['message-id'] });
+    } else {
+      const errorText = response.messages?.[0]?.['error-text'] || 'Unknown error';
+      res.status(400).json({ success: false, error: errorText });
+    }
+  } catch (error) {
+    console.error('SMS send error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to send SMS' });
+  }
+});
+
+// ==================== EMAIL SEND ====================
+
+// Send Email (admin only)
+app.post('/api/email/send', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  if (!emailTransporter) {
+    return res.status(400).json({ error: 'SMTP not configured', success: false });
+  }
+
+  const { to, subject, message } = req.body;
+
+  if (!to || !subject || !message) {
+    return res.status(400).json({ error: 'Email address, subject and message are required', success: false });
+  }
+
+  try {
+    const info = await emailTransporter.sendMail({
+      from: `"Drone Service" <${getFromEmail()}>`,
+      to: to,
+      subject: subject,
+      text: message,
+      html: message.replace(/\n/g, '<br>')
+    });
+
+    console.log('Email sent:', info.messageId);
+    res.json({ success: true, messageId: info.messageId });
+  } catch (error) {
+    console.error('Email send error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to send email' });
+  }
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`API Server running on port ${PORT}`);
+});
