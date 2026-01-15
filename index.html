@@ -2,85 +2,240 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- Preconnect to external domains for faster loading -->
+    <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
+    <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin />
+    <link rel="dns-prefetch" href="https://tile.openstreetmap.org" />
+    <link rel="dns-prefetch" href="https://nominatim.openstreetmap.org" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
     <!-- SEO Primary Meta Tags -->
-    <title>Drone Service - Agricultura de Precisión | Fumigación con Drones</title>
-    <meta name="title" content="Drone Service - Agricultura de Precisión | Fumigación con Drones" />
-    <meta name="description" content="Servicios profesionales de drones agrícolas de precisión. Fumigación, mapeo y análisis de cultivos con tecnología avanzada. Cobertura en Polonia, España y Europa." />
-    <meta name="keywords" content="drones agrícolas, fumigación con drones, agricultura de precisión, mapeo de cultivos, drones XAG, servicios agrícolas, pulverización aérea, análisis de cultivos, drone farming, precision agriculture" />
-    <meta name="author" content="Drone Service - DroneAgri" />
+    <title>DroneAgri - Usługi Dronami Rolniczymi | Opryski, Mapowanie, Precyzyjne Rolnictwo</title>
+    <meta name="title" content="DroneAgri - Usługi Dronami Rolniczymi | Opryski, Mapowanie, Precyzyjne Rolnictwo" />
+    <meta name="description" content="Profesjonalne usługi dronów rolniczych w Polsce i Europie. Opryski dronem, mapowanie upraw, analiza pól, cieniowanie. Drony XAG - precyzyjne rolnictwo z najnowszą technologią." />
+    <meta name="keywords" content="drony rolnicze, opryski dronem, usługi dronem, mapowanie upraw, drony XAG, precyzyjne rolnictwo, cieniowanie, fumigacja dronem, analiza upraw, drone farming, precision agriculture, agricultural drones, drones agrícolas, fumigación con drones" />
+    <meta name="author" content="DroneAgri" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href="https://cieniowanie.droneagri.pl/" />
 
+    <!-- Language alternates for multilingual SEO -->
+    <link rel="alternate" hreflang="pl" href="https://cieniowanie.droneagri.pl/" />
+    <link rel="alternate" hreflang="es" href="https://cieniowanie.droneagri.pl/" />
+    <link rel="alternate" hreflang="en" href="https://cieniowanie.droneagri.pl/" />
+    <link rel="alternate" hreflang="x-default" href="https://cieniowanie.droneagri.pl/" />
+
     <!-- Theme & PWA -->
     <meta name="theme-color" content="#059669" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Drone Service" />
-    <link rel="apple-touch-icon" href="/logo.png" />
+    <meta name="apple-mobile-web-app-title" content="DroneAgri" />
 
     <!-- Geo Tags -->
     <meta name="geo.region" content="PL" />
     <meta name="geo.placename" content="Poland" />
+    <meta name="geo.position" content="52.2297;21.0122" />
+    <meta name="ICBM" content="52.2297, 21.0122" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://cieniowanie.droneagri.pl/" />
-    <meta property="og:title" content="Drone Service - Agricultura de Precisión | Fumigación con Drones" />
-    <meta property="og:description" content="Servicios profesionales de drones agrícolas de precisión. Fumigación, mapeo y análisis de cultivos con tecnología avanzada." />
+    <meta property="og:title" content="DroneAgri - Usługi Dronami Rolniczymi | Opryski i Mapowanie" />
+    <meta property="og:description" content="Profesjonalne usługi dronów rolniczych w Polsce i Europie. Opryski, mapowanie upraw, analiza pól. Drony XAG - precyzyjne rolnictwo." />
     <meta property="og:image" content="https://cieniowanie.droneagri.pl/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Drone Service - Servicios de drones agrícolas" />
-    <meta property="og:locale" content="es_ES" />
-    <meta property="og:locale:alternate" content="pl_PL" />
+    <meta property="og:image:alt" content="DroneAgri - Profesjonalne usługi dronów rolniczych" />
+    <meta property="og:locale" content="pl_PL" />
+    <meta property="og:locale:alternate" content="es_ES" />
     <meta property="og:locale:alternate" content="en_US" />
-    <meta property="og:site_name" content="Drone Service" />
+    <meta property="og:site_name" content="DroneAgri" />
     <meta property="fb:app_id" content="1538419290707354" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@droneagri" />
+    <meta name="twitter:creator" content="@droneagri" />
     <meta name="twitter:url" content="https://cieniowanie.droneagri.pl/" />
-    <meta name="twitter:title" content="Drone Service - Agricultura de Precisión" />
-    <meta name="twitter:description" content="Servicios profesionales de drones agrícolas de precisión. Fumigación, mapeo y análisis de cultivos con tecnología avanzada." />
+    <meta name="twitter:title" content="DroneAgri - Usługi Dronami Rolniczymi" />
+    <meta name="twitter:description" content="Profesjonalne usługi dronów rolniczych w Polsce i Europie. Opryski, mapowanie upraw, cieniowanie. Drony XAG." />
     <meta name="twitter:image" content="https://cieniowanie.droneagri.pl/og-image.png" />
-    <meta name="twitter:image:alt" content="Drone Service - Servicios de drones agrícolas" />
+    <meta name="twitter:image:alt" content="DroneAgri - Profesjonalne usługi dronów rolniczych" />
 
-    <!-- Structured Data / JSON-LD -->
+    <!-- Structured Data / JSON-LD - Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "DroneAgri",
+      "alternateName": ["Drone Agri", "DroneAgri Poland"],
+      "url": "https://droneagri.pl",
+      "logo": "https://cieniowanie.droneagri.pl/logo.png",
+      "sameAs": [
+        "https://droneagri.pl",
+        "https://cieniowanie.droneagri.pl"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "availableLanguage": ["Polish", "Spanish", "English"]
+      }
+    }
+    </script>
+
+    <!-- Structured Data / JSON-LD - Local Business -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
-      "name": "Drone Service",
-      "description": "Servicios profesionales de drones agrícolas de precisión. Fumigación, mapeo y análisis de cultivos.",
+      "@id": "https://cieniowanie.droneagri.pl/#business",
+      "name": "DroneAgri - Usługi Dronami Rolniczymi",
+      "description": "Profesjonalne usługi dronów rolniczych. Opryski dronem, mapowanie upraw, cieniowanie, analiza pól. Drony XAG - precyzyjne rolnictwo z najnowszą technologią w Polsce i Europie.",
       "url": "https://cieniowanie.droneagri.pl",
       "logo": "https://cieniowanie.droneagri.pl/logo.png",
-      "image": "https://cieniowanie.droneagri.pl/og-image.png",
+      "image": [
+        "https://cieniowanie.droneagri.pl/og-image.png",
+        "https://cieniowanie.droneagri.pl/logo.png"
+      ],
       "telephone": "+48-XXX-XXX-XXX",
       "address": {
         "@type": "PostalAddress",
-        "addressCountry": "PL"
+        "addressCountry": "PL",
+        "addressRegion": "Mazowieckie"
       },
       "geo": {
         "@type": "GeoCoordinates",
         "latitude": "52.2297",
         "longitude": "21.0122"
       },
-      "openingHoursSpecification": {
-        "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        "opens": "08:00",
-        "closes": "18:00"
-      },
+      "areaServed": [
+        {"@type": "Country", "name": "Poland"},
+        {"@type": "Country", "name": "Spain"},
+        {"@type": "Country", "name": "Czech Republic"},
+        {"@type": "Country", "name": "Slovakia"},
+        {"@type": "Country", "name": "Italy"},
+        {"@type": "Country", "name": "Bulgaria"}
+      ],
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+          "opens": "07:00",
+          "closes": "20:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Saturday"],
+          "opens": "08:00",
+          "closes": "16:00"
+        }
+      ],
       "sameAs": [
         "https://droneagri.pl"
       ],
       "priceRange": "$$",
-      "serviceType": ["Fumigación con drones", "Mapeo de cultivos", "Análisis agrícola", "Agricultura de precisión"]
+      "paymentAccepted": ["Cash", "Credit Card", "Bank Transfer"],
+      "currenciesAccepted": "PLN, EUR"
+    }
+    </script>
+
+    <!-- Structured Data / JSON-LD - Services -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "serviceType": "Agricultural Drone Services",
+      "provider": {
+        "@type": "LocalBusiness",
+        "name": "DroneAgri"
+      },
+      "areaServed": {
+        "@type": "Country",
+        "name": "Poland"
+      },
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Usługi Dronami Rolniczymi",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Opryski dronem",
+              "description": "Profesjonalne opryski dronem XAG. Precyzyjne rozpylanie środków ochrony roślin."
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Mapowanie upraw",
+              "description": "Dokładne mapowanie pól i upraw z wykorzystaniem dronów i kamer multispektralnych."
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Cieniowanie",
+              "description": "Cieniowanie upraw dronem dla ochrony przed słońcem."
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Wynajem dronów",
+              "description": "Wynajem profesjonalnych dronów rolniczych XAG wraz z operatorem."
+            }
+          }
+        ]
+      }
+    }
+    </script>
+
+    <!-- Structured Data / JSON-LD - WebSite for Sitelinks Search -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "DroneAgri",
+      "url": "https://cieniowanie.droneagri.pl",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://cieniowanie.droneagri.pl/?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- Structured Data / JSON-LD - BreadcrumbList -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Strona główna",
+          "item": "https://cieniowanie.droneagri.pl/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Pomoc",
+          "item": "https://cieniowanie.droneagri.pl/help"
+        }
+      ]
     }
     </script>
   </head>

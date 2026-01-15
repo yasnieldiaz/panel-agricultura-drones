@@ -1,9 +1,40 @@
+# ===========================================
+# DRONEAGRI - HTACCESS CONFIGURATION
+# ===========================================
+
 # Handle client-side routing (SPA)
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_URI} !^/api
 RewriteRule ^ index.html [L]
+
+# Force HTTPS (production only)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ===========================================
+# COMPRESSION (GZIP)
+# ===========================================
+<IfModule mod_deflate.c>
+    # Compress text files
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/atom+xml
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE font/ttf
+    AddOutputFilterByType DEFLATE font/otf
+    AddOutputFilterByType DEFLATE font/woff
+    AddOutputFilterByType DEFLATE font/woff2
+</IfModule>
 
 # ===========================================
 # CACHE CONTROL
@@ -16,19 +47,76 @@ RewriteRule ^ index.html [L]
     Header set Expires 0
 </Files>
 
+# Never cache service worker
+<Files "sw.js">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+</Files>
+
 # Cache assets with hashes for 1 year (they have unique hashes)
 <FilesMatch "\.(js|css)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
 </FilesMatch>
 
-# Cache images and fonts for 1 month
-<FilesMatch "\.(ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$">
-    Header set Cache-Control "public, max-age=2592000"
+# Cache images for 1 year
+<FilesMatch "\.(ico|png|jpg|jpeg|gif|webp|avif)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
 </FilesMatch>
 
-# Enable mod_headers
+# Cache fonts for 1 year
+<FilesMatch "\.(woff|woff2|ttf|eot|otf)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+
+# Cache SVG and static assets for 1 week
+<FilesMatch "\.(svg|json|xml)$">
+    Header set Cache-Control "public, max-age=604800"
+</FilesMatch>
+
+# ===========================================
+# SECURITY HEADERS
+# ===========================================
 <IfModule mod_headers.c>
-    # Remove ETag for better cache control
+    # Remove ETag
     Header unset ETag
+
+    # XSS Protection
+    Header set X-XSS-Protection "1; mode=block"
+
+    # Prevent MIME sniffing
+    Header set X-Content-Type-Options "nosniff"
+
+    # Clickjacking protection
+    Header set X-Frame-Options "SAMEORIGIN"
+
+    # Referrer Policy
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Permissions Policy
+    Header set Permissions-Policy "geolocation=(self), microphone=(), camera=()"
+
+    # Content Security Policy (adjust as needed)
+    # Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://nominatim.openstreetmap.org https://tile.openstreetmap.org;"
 </IfModule>
+
 FileETag None
+
+# ===========================================
+# MIME TYPES
+# ===========================================
+<IfModule mod_mime.c>
+    AddType application/javascript js mjs
+    AddType application/json json
+    AddType application/manifest+json webmanifest
+    AddType image/svg+xml svg svgz
+    AddType image/webp webp
+    AddType font/woff woff
+    AddType font/woff2 woff2
+</IfModule>
+
+# ===========================================
+# ERROR DOCUMENTS
+# ===========================================
+ErrorDocument 404 /index.html
+ErrorDocument 403 /index.html

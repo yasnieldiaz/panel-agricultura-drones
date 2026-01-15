@@ -23,6 +23,8 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-framer': ['framer-motion'],
           'vendor-icons': ['lucide-react'],
+          // Map dependencies - loaded only when admin dashboard is accessed
+          'vendor-leaflet': ['leaflet', 'react-leaflet'],
         },
       },
     },
@@ -32,9 +34,17 @@ export default defineConfig({
     target: 'es2020',
     // Enable source maps only in development
     sourcemap: false,
+    // CSS code splitting
+    cssCodeSplit: true,
+    // Asset inlining threshold (4kb)
+    assetsInlineLimit: 4096,
   },
   // Optimize dependencies
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'framer-motion'],
+    include: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'leaflet', 'react-leaflet'],
+  },
+  // CSS optimization
+  css: {
+    devSourcemap: false,
   },
 })

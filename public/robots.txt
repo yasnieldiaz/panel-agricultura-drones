@@ -1,0 +1,29 @@
+# Robots.txt for cieniowanie.droneagri.pl
+# DroneAgri - Agricultural Drone Services
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /dashboard
+
+# Sitemaps
+Sitemap: https://cieniowanie.droneagri.pl/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Google specific
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard
+
+# Bing specific
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard
