@@ -34,6 +34,7 @@ import { useAuth } from '../hooks/useAuth'
 import { authApi, usersApi, type AdminUser } from '../lib/api'
 import LanguageSelector from '../components/LanguageSelector'
 import ServiceRequestModal from '../components/ServiceRequestModal'
+import JobsMap from '../components/JobsMap'
 import Logo from '../components/Logo'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://cieniowanie.droneagri.pl/api'
@@ -408,6 +409,16 @@ export default function AdminDashboard() {
               <div className="text-white/60 text-sm mt-1">{stat.label}</div>
             </div>
           ))}
+        </motion.div>
+
+        {/* Jobs Map */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-8"
+        >
+          <JobsMap requests={requests} />
         </motion.div>
 
         {/* Requests List */}
