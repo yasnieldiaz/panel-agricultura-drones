@@ -607,7 +607,7 @@ export default function AdminClients() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateUser} className="space-y-4">
+            <form onSubmit={handleCreateUser} className="space-y-4" noValidate>
               {/* Role selector */}
               <div>
                 <label className="block text-sm text-white/60 mb-2">{t('admin.clients.userType')} *</label>

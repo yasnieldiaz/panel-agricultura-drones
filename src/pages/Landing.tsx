@@ -552,7 +552,7 @@ export default function Landing() {
               </div>
 
               {/* Contact Form */}
-              <form onSubmit={handleContactSubmit} className="glass rounded-2xl p-6 sm:p-8 space-y-4">
+              <form onSubmit={handleContactSubmit} className="glass rounded-2xl p-6 sm:p-8 space-y-4" noValidate>
                 {contactStatus === 'success' && (
                   <div className="bg-emerald-500/20 border border-emerald-500/50 rounded-lg p-3 text-emerald-300 text-sm">
                     {t('contact.form.success')}

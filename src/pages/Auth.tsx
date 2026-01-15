@@ -199,7 +199,7 @@ export default function Auth() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               {mode === 'signup' && (
                 <>
                   <div className="relative">
@@ -351,7 +351,7 @@ export default function Auth() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleForgotPassword} className="space-y-4">
+              <form onSubmit={handleForgotPassword} className="space-y-4" noValidate>
                 <p className="text-white/60 text-sm mb-4">
                   {t('forgotPassword.description')}
                 </p>
