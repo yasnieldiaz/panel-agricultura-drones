@@ -150,4 +150,59 @@ Para desplegar una nueva version:
 
 ---
 
+## Prevencion de Caidas (Auto-recovery)
+
+### 1. PM2 Startup (Inicio automatico)
+
+PM2 esta configurado para iniciar automaticamente cuando el servidor se reinicia:
+
+```bash
+# Verificar que este habilitado
+systemctl is-enabled pm2-root
+
+# Si necesitas reconfigurarlo
+pm2 startup
+pm2 save
+```
+
+### 2. Script de Monitoreo
+
+Hay un script que verifica la API cada 5 minutos y la reinicia si esta caida:
+
+**Ubicacion**: `/root/check-api.sh`
+
+```bash
+#!/bin/bash
+API_URL="http://localhost:3001/api/health"
+LOG_FILE="/var/log/api-monitor.log"
+
+response=$(curl -s -o /dev/null -w "%{http_code}" $API_URL)
+
+if [ "$response" != "200" ]; then
+    echo "$(date): API caida. Reiniciando..." >> $LOG_FILE
+    pm2 restart cieniowanie-api
+else
+    echo "$(date): API OK" >> $LOG_FILE
+fi
+```
+
+### 3. Cron Job
+
+El script se ejecuta automaticamente cada 5 minutos:
+
+```bash
+# Ver cron job
+crontab -l | grep check-api
+
+# Resultado: */5 * * * * /root/check-api.sh
+```
+
+### 4. Ver Logs de Monitoreo
+
+```bash
+tail -f /var/log/api-monitor.log
+```
+
+---
+
 *Ultima actualizacion: 2026-01-15*
