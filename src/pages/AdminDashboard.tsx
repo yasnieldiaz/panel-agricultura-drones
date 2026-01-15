@@ -788,6 +788,7 @@ export default function AdminDashboard() {
       <ServiceRequestModal
         isOpen={serviceModalOpen}
         onClose={() => setServiceModalOpen(false)}
+        onSuccess={fetchRequests}
       />
     </div>
   )

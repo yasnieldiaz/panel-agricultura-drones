@@ -47,20 +47,20 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   // Fetch user's service requests
-  useEffect(() => {
-    const fetchJobs = async () => {
-      if (!token) return
+  const fetchJobs = async () => {
+    if (!token) return
 
-      try {
-        const data = await serviceRequestsApi.getMyRequests()
-        setJobs(data)
-      } catch (err) {
-        console.error('Error fetching jobs:', err)
-      } finally {
-        setLoading(false)
-      }
+    try {
+      const data = await serviceRequestsApi.getMyRequests()
+      setJobs(data)
+    } catch (err) {
+      console.error('Error fetching jobs:', err)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchJobs()
   }, [token])
 
@@ -428,6 +428,7 @@ export default function Dashboard() {
       <ServiceRequestModal
         isOpen={serviceModalOpen}
         onClose={() => setServiceModalOpen(false)}
+        onSuccess={fetchJobs}
       />
 
       {/* Profile Panel */}

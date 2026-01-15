@@ -11,6 +11,7 @@ interface ServiceRequestModalProps {
   isOpen: boolean
   onClose: () => void
   onLoginRequired?: () => void
+  onSuccess?: () => void
 }
 
 interface ServiceOption {
@@ -43,7 +44,7 @@ const languageToLocale: Record<string, string> = {
   sk: 'sk-SK'
 }
 
-export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }: ServiceRequestModalProps) {
+export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired, onSuccess }: ServiceRequestModalProps) {
   const { t, language } = useLanguage()
   const { user } = useAuth()
   const [step, setStep] = useState(1)
@@ -140,6 +141,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onLoginRequired }
             : formData.notes
       })
       setSubmitted(true)
+      onSuccess?.()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al enviar solicitud')
     } finally {
