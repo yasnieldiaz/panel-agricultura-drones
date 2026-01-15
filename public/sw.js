@@ -1,4 +1,4 @@
-const CACHE_NAME = 'drone-service-v1';
+const CACHE_NAME = 'drone-service-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
