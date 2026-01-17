@@ -1,6 +1,6 @@
-const CACHE_NAME = 'droneagri-v3';
-const STATIC_CACHE = 'droneagri-static-v3';
-const DYNAMIC_CACHE = 'droneagri-dynamic-v3';
+const CACHE_NAME = 'droneagri-v4';
+const STATIC_CACHE = 'droneagri-static-v4';
+const DYNAMIC_CACHE = 'droneagri-dynamic-v4';
 
 // Static assets to cache immediately
 const STATIC_ASSETS = [
@@ -16,7 +16,7 @@ const STATIC_ASSETS = [
 const CACHE_FIRST_PATTERNS = [
   /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
   /\.(?:woff|woff2|ttf|eot)$/,
-  /^https:\/\/tile\.openstreetmap\.org/,
+  /^https:\/\/[abc]\.tile\.openstreetmap\.org/,
   /^https:\/\/cdnjs\.cloudflare\.com/
 ];
 
